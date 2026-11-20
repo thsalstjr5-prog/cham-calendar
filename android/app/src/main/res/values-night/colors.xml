@@ -1,5 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="app_bg">#26232A</color>
-    <color name="colorPrimaryDark">#26232A</color>
+    <color name="app_bg">#2F2A3A</color>
+    <color name="colorPrimaryDark">#2F2A3A</color>
+
+    <!-- 위젯 (어두운 화면, 파스텔 유지) -->
+    <color name="w_bg">#3A3447</color>
+    <color name="w_row">#453E54</color>
+    <color name="w_fg">#EEE7F2</color>
+    <color name="w_muted">#B8ADC6</color>
+    <color name="w_lav">#C4B5E6</color>
+    <color name="w_peach">#ECBCAA</color>
+    <color name="w_mint">#ACD8C2</color>
+    <color name="w_sky">#ADC3E2</color>
 </resources>

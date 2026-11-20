@@ -4,4 +4,6 @@
     <string name="title_activity_main">챔의 달력</string>
     <string name="package_name">app.chamcalendar</string>
     <string name="custom_url_scheme">app.chamcalendar</string>
+    <string name="w_today_desc">오늘 일정과 남은 할 일</string>
+    <string name="w_month_desc">이번 달 달력과 일정 있는 날</string>
 </resources>

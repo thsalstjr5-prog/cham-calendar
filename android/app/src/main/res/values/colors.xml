@@ -4,4 +4,14 @@
     <color name="colorPrimary">#9D8FBD</color>
     <color name="colorPrimaryDark">#D5CFD6</color>
     <color name="colorAccent">#9D8FBD</color>
+
+    <!-- 위젯 (밝은 화면) -->
+    <color name="w_bg">#DFD9DF</color>
+    <color name="w_row">#E7E2E6</color>
+    <color name="w_fg">#3A3540</color>
+    <color name="w_muted">#6F6874</color>
+    <color name="w_lav">#9D8FBD</color>
+    <color name="w_peach">#C99484</color>
+    <color name="w_mint">#86AE9B</color>
+    <color name="w_sky">#8199B8</color>
 </resources>
