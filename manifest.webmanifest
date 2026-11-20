@@ -1,0 +1,17 @@
+{
+  "name": "챔의 달력",
+  "short_name": "챔의 달력",
+  "description": "날짜마다 메모와 할 일을 적는 차분한 파스텔 달력",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#d5cfd6",
+  "theme_color": "#d5cfd6",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
