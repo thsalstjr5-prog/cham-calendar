@@ -1,0 +1,9 @@
+{
+  "appId": "app.chamcalendar",
+  "appName": "챔의 달력",
+  "webDir": "www",
+  "android": {
+    "adjustMarginsForEdgeToEdge": "force",
+    "backgroundColor": "#d5cfd6"
+  }
+}
