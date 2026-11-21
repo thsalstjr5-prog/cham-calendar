@@ -52,13 +52,71 @@ final class CalendarData {
         }
     }
 
+    // 날짜 ↔ 날짜 번호 (1970-01-01 = 0)
+    static long dn(String k) {
+        int y = Integer.parseInt(k.substring(0, 4)), m = Integer.parseInt(k.substring(5, 7)), d = Integer.parseInt(k.substring(8, 10));
+        return civil(y, m, d);
+    }
+    static long civil(int y, int m, int d) {
+        y -= m <= 2 ? 1 : 0;
+        long era = (y >= 0 ? y : y - 399) / 400;
+        long yoe = y - era * 400;
+        long doy = (153L * (m + (m > 2 ? -3 : 9)) + 2) / 5 + d - 1;
+        long doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+        return era * 146097 + doe - 719468;
+    }
+    static String kd(long z) {
+        z += 719468;
+        long era = (z >= 0 ? z : z - 146096) / 146097;
+        long doe = z - era * 146097;
+        long yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
+        long y = yoe + era * 400;
+        long doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+        long mp = (5 * doy + 2) / 153;
+        long d = doy - (153 * mp + 2) / 5 + 1;
+        long m = mp + (mp < 10 ? 3 : -9);
+        if (m <= 2) y++;
+        return String.format(Locale.US, "%04d-%02d-%02d", y, m, d);
+    }
+    static int monthDays(int y, int m) {
+        if (m == 2) return (y % 4 == 0 && y % 100 != 0) || y % 400 == 0 ? 29 : 28;
+        return (m == 4 || m == 6 || m == 9 || m == 11) ? 30 : 31;
+    }
+
+    /** k 날짜에 걸친 회차의 시작 날짜 번호. 없으면 Long.MIN_VALUE. (index.html의 occs()와 같은 규칙) */
+    static long occStart(String base, long dur, String repeat, long n) {
+        long s0 = dn(base);
+        if (n < s0) return Long.MIN_VALUE;
+        switch (repeat) {
+            case "day": return n;
+            case "week": { long st = n - ((n - s0) % 7); return n - st <= dur ? st : Long.MIN_VALUE; }
+            case "month": case "year": {
+                int y0 = Integer.parseInt(base.substring(0, 4)), m0 = Integer.parseInt(base.substring(5, 7)), dd = Integer.parseInt(base.substring(8, 10));
+                String lo = kd(Math.max(s0, n - dur));
+                int y = Integer.parseInt(lo.substring(0, 4)), m = Integer.parseInt(lo.substring(5, 7));
+                if (repeat.equals("year")) { m = m0; if (y < y0) y = y0; y--; }
+                for (int g = 0; g < 600; g++) {
+                    if (dd <= monthDays(y, m)) {
+                        long st = civil(y, m, dd);
+                        if (st > n) break;
+                        if (st >= s0 && n <= st + dur) return st;
+                    }
+                    if (repeat.equals("year")) y++; else { m++; if (m > 12) { m = 1; y++; } }
+                }
+                return Long.MIN_VALUE;
+            }
+            default: return n <= s0 + dur ? s0 : Long.MIN_VALUE;
+        }
+    }
+
     static Day day(JSONObject all, String k) {
         Day d = new Day();
-        // 앞 날짜에서 시작해 오늘까지 이어지는 기간 일정
+        long n = dn(k);
+        // 반복·기간 일정까지 펼쳐서 오늘(k)에 걸친 것을 모두 모아요
         java.util.Iterator<String> it = all.keys();
         while (it.hasNext()) {
             String sk = it.next();
-            if (sk.compareTo(k) >= 0) continue;
+            if (!sk.matches("\\d{4}-\\d{2}-\\d{2}") || sk.compareTo(k) > 0) continue;
             JSONObject se = all.optJSONObject(sk);
             JSONArray sev = se == null ? null : se.optJSONArray("events");
             if (sev == null) continue;
@@ -66,38 +124,27 @@ final class CalendarData {
                 JSONObject v = sev.optJSONObject(i);
                 if (v == null || v.optString("title").trim().isEmpty()) continue;
                 String end = v.optString("end", "");
-                if (end.compareTo(k) < 0) continue;
+                long dur = end.matches("\\d{4}-\\d{2}-\\d{2}") && end.compareTo(sk) > 0 ? dn(end) - dn(sk) : 0;
+                long st = occStart(sk, dur, v.optString("repeat", ""), n);
+                if (st == Long.MIN_VALUE) continue;
                 Event ev = new Event();
                 ev.title = v.optString("title").trim();
-                ev.time = "";
                 ev.color = v.optString("color", "lav");
-                String et = v.optString("endTime", "");
-                ev.when = end.equals(k) && et.matches("\\d{2}:\\d{2}") ? "~ " + fmtTime(et) : "하루 종일";
+                String time = v.optString("time", ""), et = v.optString("endTime", "");
+                if (st == n) { ev.time = time; }
+                else {
+                    ev.time = "";
+                    ev.when = n == st + dur && et.matches("\\d{2}:\\d{2}") ? "~ " + fmtTime(et) : "하루 종일";
+                }
                 d.events.add(ev);
             }
         }
         JSONObject e = all.optJSONObject(k);
-        if (e == null) return d;
-        JSONArray evs = e.optJSONArray("events");
-        if (evs != null) {
-            for (int i = 0; i < evs.length(); i++) {
-                JSONObject v = evs.optJSONObject(i);
-                if (v == null || v.optString("title").trim().isEmpty()) continue;
-                Event ev = new Event();
-                ev.title = v.optString("title").trim();
-                ev.time = v.optString("time", "");
-                ev.color = v.optString("color", "lav");
-                d.events.add(ev);
-            }
-        }
         // 예전 형식(메모)도 일정처럼 보여줘요
-        String memo = e.optString("memo", "").trim();
+        String memo = e == null ? "" : e.optString("memo", "").trim();
         if (!memo.isEmpty()) { Event ev = new Event(); ev.title = memo; ev.time = ""; ev.color = "lav"; d.events.add(ev); }
-        Collections.sort(d.events, (a, b) -> {
-            String ta = a.time.isEmpty() ? "" : a.time, tb = b.time.isEmpty() ? "" : b.time;
-            return ta.compareTo(tb);
-        });
-        JSONArray todos = e.optJSONArray("todos");
+        Collections.sort(d.events, (a, b) -> a.time.compareTo(b.time));
+        JSONArray todos = e == null ? null : e.optJSONArray("todos");
         if (todos != null) {
             for (int i = 0; i < todos.length(); i++) {
                 JSONObject t = todos.optJSONObject(i);
