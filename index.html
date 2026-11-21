@@ -597,10 +597,10 @@ body.locked { overflow: hidden; }
 
   // 일정 제목이 칸에서 몇 줄이 되는지 실제 글씨로 재기 (폰 글자 크기 설정까지 반영)
   // 돌려주는 값: 한 줄 칩보다 더 필요한 높이(px). 최대 네 줄.
-  var extCache = {};
+  var extCache = {}, chipW = 0, refitting = 0;
   function titleExt(t) {
-    var w = Math.max(16, Math.floor(cellW - 10));
-    var ck = w + '|' + t;
+    var w = Math.max(16, chipW || (cellW - 10));
+    var ck = w.toFixed(2) + '|' + t;
     if (ck in extCache) return extCache[ck];
     var pr = $('chipProbe');
     if (!pr) { pr = document.createElement('b'); pr.id = 'chipProbe'; $('cal').appendChild(pr); }
@@ -614,7 +614,7 @@ body.locked { overflow: hidden; }
   var cellW = 54;
 
   function renderGrid() {
-    cellW = ($('days').clientWidth || 378) / 7;
+    cellW = ($('days').getBoundingClientRect().width || 378) / 7;
     $('title').textContent = (view.getMonth() + 1) + '월';
     $('year').textContent = view.getFullYear();
     var days = $('days'); days.innerHTML = '';
@@ -693,6 +693,27 @@ body.locked { overflow: hidden; }
         b2.dataset.k = k;
         days.appendChild(b2);
       }
+    }
+    // 실제로 그려진 일정 글씨 폭(소수점까지)으로 다시 맞추기: 딱 맞는 제목이 두 줄로 잘못 잡히지 않게
+    var rb = days.querySelector('.chip:not(.wide):not(.gap) b');
+    if (rb) {
+      var rw = rb.getBoundingClientRect().width;
+      if (rw > 0 && Math.abs(rw - (chipW || (cellW - 10))) > 0.2) { chipW = rw; extCache = {}; renderGrid(); return; }
+    }
+    // 그려진 칸 안 글씨를 직접 재서, 계산과 다르면 고쳐서 다시 그려요 (빈 줄이나 잘림 없게)
+    if (refitting < 4) {
+      var wrong = false, wNow = Math.max(16, chipW || (cellW - 10));
+      days.querySelectorAll('.chip:not(.wide):not(.gap) b').forEach(function (el) {
+        var keep = el.style.cssText;
+        el.style.cssText = 'display:block;white-space:normal;word-break:break-all;line-height:1.3em;-webkit-line-clamp:none;line-clamp:none;height:auto;padding:0;overflow:visible';
+        var one = parseFloat(getComputedStyle(el).lineHeight) || 12.35;
+        var n = Math.min(4, Math.max(1, Math.round(el.scrollHeight / one)));
+        el.style.cssText = keep;
+        var real = n > 1 ? Math.max(0, Math.ceil(n * one + 3 - 15)) : 0;
+        var ck = wNow.toFixed(2) + '|' + el.textContent;
+        if (extCache[ck] !== real) { extCache[ck] = real; wrong = true; }
+      });
+      if (wrong) { refitting++; try { renderGrid(); } finally { refitting--; } return; }
     }
     var nb = cellH();
     if (nb !== bigH) { bigH = nb; if (!$('cal').classList.contains('drag')) applyT(compact ? 0 : 1); renderGrid(); }
