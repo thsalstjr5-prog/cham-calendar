@@ -45,7 +45,7 @@ public class TodayWidget extends AppWidgetProvider {
             if (rows >= MAX_ROWS) break;
             RemoteViews r = new RemoteViews(pkg, R.layout.w_row_event);
             r.setImageViewResource(R.id.r_dot, CalendarData.dotRes(e.color));
-            r.setTextViewText(R.id.r_time, CalendarData.fmtTime(e.time));
+            r.setTextViewText(R.id.r_time, e.when != null ? e.when : CalendarData.fmtTime(e.time));
             r.setTextViewText(R.id.r_text, e.title);
             v.addView(R.id.w_rows, r);
             rows++;

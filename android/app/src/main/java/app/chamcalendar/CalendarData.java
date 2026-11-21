@@ -21,6 +21,7 @@ final class CalendarData {
 
     static final class Event {
         String title; String time; String color;
+        String when; // 기간 일정의 중간·끝 날에 보여줄 시간 글씨
     }
 
     static final class Day {
@@ -53,6 +54,28 @@ final class CalendarData {
 
     static Day day(JSONObject all, String k) {
         Day d = new Day();
+        // 앞 날짜에서 시작해 오늘까지 이어지는 기간 일정
+        java.util.Iterator<String> it = all.keys();
+        while (it.hasNext()) {
+            String sk = it.next();
+            if (sk.compareTo(k) >= 0) continue;
+            JSONObject se = all.optJSONObject(sk);
+            JSONArray sev = se == null ? null : se.optJSONArray("events");
+            if (sev == null) continue;
+            for (int i = 0; i < sev.length(); i++) {
+                JSONObject v = sev.optJSONObject(i);
+                if (v == null || v.optString("title").trim().isEmpty()) continue;
+                String end = v.optString("end", "");
+                if (end.compareTo(k) < 0) continue;
+                Event ev = new Event();
+                ev.title = v.optString("title").trim();
+                ev.time = "";
+                ev.color = v.optString("color", "lav");
+                String et = v.optString("endTime", "");
+                ev.when = end.equals(k) && et.matches("\\d{2}:\\d{2}") ? "~ " + fmtTime(et) : "하루 종일";
+                d.events.add(ev);
+            }
+        }
         JSONObject e = all.optJSONObject(k);
         if (e == null) return d;
         JSONArray evs = e.optJSONArray("events");
