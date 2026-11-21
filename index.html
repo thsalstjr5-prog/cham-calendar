@@ -151,15 +151,34 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--lav); outli
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; display: flex; justify-content: center; pointer-events: none;
   padding: 10px max(16px, env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
 }
-.quick .wrap {
+.quick .wrap, .dsadd .wrap {
   pointer-events: auto; width: 100%; max-width: 440px; background: var(--surface-2); border-radius: 26px;
   box-shadow: 0 6px 22px rgba(20, 16, 26, .16), 0 0 0 1px var(--line);
 }
-.quick .pv { font-size: 12.5px; color: var(--lav); padding: 10px 20px 0; font-weight: 600; }
-.quick .rowq { display: flex; align-items: center; gap: 6px; padding: 4px 5px 4px 20px; }
-.quick input { flex: 1; min-width: 0; border: 0; background: none; color: var(--fg); font: inherit; font-size: 15px; padding: 10px 0; outline: none; }
+.quick .pv, .dsadd .pv { font-size: 12.5px; color: var(--lav); padding: 10px 20px 0; font-weight: 600; }
+.quick .rowq, .dsadd .rowq { display: flex; align-items: center; gap: 6px; padding: 4px 5px 4px 20px; }
+.quick input, .dsadd input { flex: 1; min-width: 0; border: 0; background: none; color: var(--fg); font: inherit; font-size: 15px; padding: 10px 0; outline: none; }
 .plus { width: 42px; height: 42px; border-radius: 21px; background: var(--lav); color: var(--on-accent); font-size: 26px; line-height: 1; display: grid; place-items: center; flex: none; }
 input::placeholder, textarea::placeholder { color: var(--muted); opacity: .8; }
+
+/* 날짜 팝업 */
+#dscrim { position: fixed; inset: 0; background: rgba(24, 20, 30, .38); z-index: 14; opacity: 0; transition: opacity .3s ease; }
+#dscrim.on { opacity: 1; }
+.dsheet {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 15; margin: 0 auto; max-width: 520px;
+  max-height: 78vh; max-height: 78dvh; background: var(--bg); border-radius: 26px 26px 0 0;
+  display: flex; flex-direction: column; box-shadow: 0 -8px 30px rgba(20, 16, 26, .2);
+  transform: translateY(105%); transition: transform .34s cubic-bezier(.2,.8,.2,1);
+}
+.dsheet.up { transform: translateY(0); }
+.dsheet.drag { transition: none; }
+.dstop { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 max(16px, env(safe-area-inset-right, 0px)) 8px max(20px, env(safe-area-inset-left, 0px)); touch-action: none; }
+.dstop .dhead { padding: 0; }
+.dsx { width: 40px; height: 40px; border-radius: 20px; background: var(--surface); color: var(--muted); font-size: 17px; display: grid; place-items: center; flex: none; }
+.dsbody { flex: 1; min-height: 60px; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 8px; padding: 0 max(16px, env(safe-area-inset-right, 0px)) 10px max(16px, env(safe-area-inset-left, 0px)); }
+.dsbody .item, .dsbody .todo { background: var(--surface); }
+.dsadd { flex: none; padding: 6px max(16px, env(safe-area-inset-right, 0px)) calc(14px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.dsadd .wrap { background: var(--surface-2); border-radius: 26px; box-shadow: 0 0 0 1px var(--line); }
 
 /* 자세히 추가 창 */
 #scrim { position: fixed; inset: 0; background: rgba(24, 20, 30, .42); z-index: 19; opacity: 0; transition: opacity .3s ease; }
@@ -296,6 +315,27 @@ body.locked { overflow: hidden; }
     </div>
   </div>
 </form>
+
+<div id="dscrim" hidden></div>
+<section class="dsheet" id="dsheet" role="dialog" aria-modal="true" aria-label="그날 일정" hidden>
+  <div class="grab" id="dsgrab" aria-hidden="true"></div>
+  <div class="dstop" id="dstop"><div class="dhead" id="dsTitle"></div><button type="button" class="dsx" id="dsClose" aria-label="닫기">✕</button></div>
+  <div class="dsbody" id="dsbody">
+    <ul class="list" id="dsEvents"></ul>
+    <div class="sec" id="dsTodoSec">할 일</div>
+    <ul class="list" id="dsTodos"></ul>
+    <p class="empty" id="dsEmpty">이 날은 아직 일정이 없어요.</p>
+  </div>
+  <form class="dsadd" id="dsForm" autocomplete="off">
+    <div class="wrap">
+      <div class="pv" id="dsPreview" hidden></div>
+      <div class="rowq">
+        <input id="dsText" enterkeyhint="done" aria-label="이 날에 빠르게 추가. 예: 오후 6시 저녁">
+        <button type="button" class="plus" id="dsPlus" aria-label="자세히 추가">+</button>
+      </div>
+    </div>
+  </form>
+</section>
 
 <div id="scrim" hidden></div>
 <section class="editor" id="editor" role="dialog" aria-modal="true" aria-label="일정 추가" hidden>
@@ -485,7 +525,7 @@ body.locked { overflow: hidden; }
   }
   function applyView() {
     $('cal').classList.toggle('compact', compact);
-    $('hint').textContent = compact ? '아래로 밀면 달력이 커져요' : '위로 밀면 그날 일정이 보여요';
+    $('hint').textContent = compact ? '아래로 밀면 달력이 커져요 · 날짜를 누르면 일정' : '위로 밀면 달력이 작아져요 · 날짜를 누르면 일정';
     applyT(compact ? 0 : 1);
   }
   function setCompact(c) {
@@ -571,20 +611,21 @@ body.locked { overflow: hidden; }
     if (v.place) parts.push(v.place);
     return parts.join(' · ');
   }
-  function renderDay() {
+  function fillDay(ids) {
     var k = key(sel), e = entry(k);
-    $('dayTitle').innerHTML = '<b>' + sel.getDate() + '</b><span>' + (sel.getMonth() + 1) + '월 ' + WD[sel.getDay()] + '요일</span>' + (HOL[k] ? '<small>' + HOL[k] + '</small>' : '');
-    var ul = $('events'); ul.innerHTML = '';
+    $(ids.title).innerHTML = '<b>' + sel.getDate() + '</b><span>' + (sel.getMonth() + 1) + '월 ' + WD[sel.getDay()] + '요일</span>' + (HOL[k] ? '<small>' + HOL[k] + '</small>' : '');
+    var ul = $(ids.events); ul.innerHTML = '';
     var evs = dayList(k);
     evs.forEach(function (o) {
       var li = document.createElement('li');
       var b = document.createElement('button'); b.type = 'button'; b.className = 'item';
-      b.innerHTML = '<span class="bar c-' + o.v.color + '"></span><span class="body"><span class="t">' + esc(o.v.title) + '</span><span class="s">' + esc(whenText(o, k)) + '</span></span>';
+      b.innerHTML = '<span class="bar c-' + o.v.color + '"></span><span class="body"><span class="t">' + esc(o.v.title) + '</span><span class="s">' + esc(whenText(o, k)) + '</span>' +
+        (o.v.memo ? '<span class="s">' + esc(o.v.memo.length > 80 ? o.v.memo.slice(0, 80) + '…' : o.v.memo) + '</span>' : '') + '</span>';
       b.setAttribute('aria-label', o.v.title + ', ' + whenText(o, k) + '. 눌러서 고치기');
       b.onclick = function () { openEditor(fromEvent(o)); };
       li.appendChild(b); ul.appendChild(li);
     });
-    var tl = $('todos'); tl.innerHTML = '';
+    var tl = $(ids.todos); tl.innerHTML = '';
     e.todos.forEach(function (t) {
       var li = document.createElement('li'); li.className = 'todo' + (t.done ? ' done' : '');
       var chk = document.createElement('button'); chk.type = 'button'; chk.className = 'chk'; chk.textContent = t.done ? '✓' : '';
@@ -594,10 +635,13 @@ body.locked { overflow: hidden; }
       tx.onclick = function () { openEditor({ kind: 'todo', id: t.id, base: k, title: t.text, tK: k, done: t.done }); };
       li.appendChild(chk); li.appendChild(tx); tl.appendChild(li);
     });
-    $('todoSec').hidden = !e.todos.length;
-    $('dayEmpty').hidden = !!(evs.length || e.todos.length);
-    $('qText').placeholder = md(k) + '에 추가';
+    $(ids.sec).hidden = !e.todos.length;
+    $(ids.empty).hidden = !!(evs.length || e.todos.length);
+    $(ids.input).placeholder = md(k) + '에 추가';
   }
+  var INLINE = { title: 'dayTitle', events: 'events', todos: 'todos', sec: 'todoSec', empty: 'dayEmpty', input: 'qText' };
+  var SHEET = { title: 'dsTitle', events: 'dsEvents', todos: 'dsTodos', sec: 'dsTodoSec', empty: 'dsEmpty', input: 'dsText' };
+  function renderDay() { fillDay(INLINE); if (dsOpen) fillDay(SHEET); }
   function render() { renderGrid(); renderDay(); }
 
   // 날짜 누르기: 목록만 그날로 (큰 달력이면 부드럽게 작아지면서)
@@ -607,17 +651,58 @@ body.locked { overflow: hidden; }
     var b = ev.target.closest('.day'); if (!b) return;
     var k = b.dataset.k;
     sel = kDate(k);
-    if (sel.getMonth() !== view.getMonth()) {
-      go(sel.getFullYear() * 12 + sel.getMonth() > view.getFullYear() * 12 + view.getMonth() ? 1 : -1, true);
-      if (!compact) setCompact(true);
-      render(); return;
-    }
-    if (!compact) {
-      Array.prototype.forEach.call(document.querySelectorAll('.day.sel'), function (x) { x.classList.remove('sel'); });
-      b.classList.add('sel'); renderDay(); setCompact(true); return;
-    }
+    if (sel.getMonth() !== view.getMonth()) go(sel.getFullYear() * 12 + sel.getMonth() > view.getFullYear() * 12 + view.getMonth() ? 1 : -1, true);
     render();
+    openDay();
   });
+
+  // ───── 날짜 팝업 ─────
+  var skipPop = false;
+  var dsOpen = false, dsheet = $('dsheet'), dscrim = $('dscrim');
+  function openDay() {
+    if (dsOpen) { fillDay(SHEET); return; }
+    dsOpen = true; fillDay(SHEET);
+    dsheet.hidden = false; dscrim.hidden = false; document.body.classList.add('locked');
+    $('dsbody').scrollTop = 0;
+    try { history.pushState({ ds: 1 }, ''); } catch (e) {}
+    void dsheet.offsetHeight;
+    dsheet.classList.add('up'); dscrim.classList.add('on');
+  }
+  function closeDay(fromBack) {
+    if (!dsOpen) return;
+    dsOpen = false;
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    $('dsText').value = ''; $('dsPreview').hidden = true;
+    dsheet.classList.remove('up', 'drag'); dsheet.style.transform = ''; dscrim.classList.remove('on'); dscrim.style.opacity = '';
+    setTimeout(function () { if (dsOpen) return; dsheet.hidden = true; dscrim.hidden = true; if (!edOpen) document.body.classList.remove('locked'); }, reduce ? 0 : 340);
+    if (!fromBack) { try { if (history.state && history.state.ds) { skipPop = true; history.back(); } } catch (e) {} }
+  }
+  dscrim.addEventListener('click', function () { closeDay(); });
+  $('dsClose').onclick = function () { closeDay(); };
+  (function () {
+    var y0 = 0, dy = 0, pid = null;
+    function down(e) {
+      if (!dsOpen || e.target.closest('button')) return;
+      pid = e.pointerId; y0 = e.clientY; dy = 0;
+      try { e.currentTarget.setPointerCapture(pid); } catch (er) {}
+      dsheet.classList.add('drag');
+    }
+    function move(e) {
+      if (e.pointerId !== pid) return;
+      dy = Math.max(0, e.clientY - y0);
+      dsheet.style.transform = 'translateY(' + dy + 'px)';
+      dscrim.style.opacity = String(Math.max(0, 1 - dy / 400));
+    }
+    function up(e) {
+      if (e.pointerId !== pid) return; pid = null;
+      dsheet.classList.remove('drag'); dsheet.style.transform = ''; dscrim.style.opacity = '';
+      if (dy > 90) closeDay();
+    }
+    [$('dsgrab'), $('dstop')].forEach(function (el) {
+      el.addEventListener('pointerdown', down); el.addEventListener('pointermove', move);
+      el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+    });
+  })();
 
   // 달 넘기기 (버튼 + 스와이프)
   function go(dir, silent) {
@@ -721,31 +806,36 @@ body.locked { overflow: hidden; }
     var title = s.replace(/\s+/g, ' ').trim() || text.trim();
     return { title: title, k: key(d), time: time };
   }
-  function quickPreview() {
-    var v = $('qText').value.trim(), pv = $('qPreview');
-    if (!v) { pv.hidden = true; return; }
+  function quickPreview(inp, pv) {
+    var v = $(inp).value.trim();
+    if (!v) { $(pv).hidden = true; return; }
     var q = parseQuick(v);
-    pv.textContent = mdw(q.k) + ' · ' + (q.time ? fmtTime(q.time) : '하루 종일') + ' · ' + q.title;
-    pv.hidden = false;
+    $(pv).textContent = mdw(q.k) + ' · ' + (q.time ? fmtTime(q.time) : '하루 종일') + ' · ' + q.title;
+    $(pv).hidden = false;
   }
-  $('qText').addEventListener('input', quickPreview);
-  $('quick').addEventListener('submit', function (ev) {
-    ev.preventDefault();
-    var v = $('qText').value.trim();
+  function quickAdd(inp, pv, keepOpen) {
+    var v = $(inp).value.trim();
     if (!v) { openEditor({}); return; }
     var q = parseQuick(v), e = entry(q.k);
     e.events.push({ id: uid(), title: q.title, time: q.time, color: 'lav' });
     store[q.k] = e; persist();
     sel = kDate(q.k); view = new Date(sel.getFullYear(), sel.getMonth(), 1);
-    $('qText').value = ''; quickPreview(); $('qText').blur();
+    $(inp).value = ''; quickPreview(inp, pv);
+    if (!keepOpen) $(inp).blur();
     render(); note(mdw(q.k) + '에 "' + q.title + '" 추가했어요.');
-  });
-  $('qPlus').onclick = function () {
-    var v = $('qText').value.trim(), o = {};
+  }
+  function quickPlus(inp, pv) {
+    var v = $(inp).value.trim(), o = {};
     if (v) { var q = parseQuick(v); o = { title: q.title, sK: q.k, eK: q.k, tK: q.k }; if (q.time) { o.allDay = false; o.sT = q.time; o.eT = addHour(q.time); } }
-    $('qText').value = ''; quickPreview(); $('qText').blur();
+    $(inp).value = ''; quickPreview(inp, pv); $(inp).blur();
     openEditor(o);
-  };
+  }
+  $('qText').addEventListener('input', function () { quickPreview('qText', 'qPreview'); });
+  $('quick').addEventListener('submit', function (ev) { ev.preventDefault(); quickAdd('qText', 'qPreview'); });
+  $('qPlus').onclick = function () { quickPlus('qText', 'qPreview'); };
+  $('dsText').addEventListener('input', function () { quickPreview('dsText', 'dsPreview'); });
+  $('dsForm').addEventListener('submit', function (ev) { ev.preventDefault(); quickAdd('dsText', 'dsPreview', true); });
+  $('dsPlus').onclick = function () { quickPlus('dsText', 'dsPreview'); };
 
   // ───── 자세히 추가 창 ─────
   var ed = null, edSnap = '', edOpen = false, miniFor = null, miniView = null;
@@ -777,8 +867,8 @@ body.locked { overflow: hidden; }
     edOpen = false;
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
     editor.classList.remove('up', 'drag'); editor.style.transform = ''; scrim.classList.remove('on'); scrim.style.opacity = '';
-    setTimeout(function () { if (edOpen) return; editor.hidden = true; scrim.hidden = true; document.body.classList.remove('locked'); }, reduce ? 0 : 360);
-    if (!fromBack) { try { if (history.state && history.state.ed) history.back(); } catch (e) {} }
+    setTimeout(function () { if (edOpen) return; editor.hidden = true; scrim.hidden = true; if (!dsOpen) document.body.classList.remove('locked'); }, reduce ? 0 : 360);
+    if (!fromBack) { try { if (history.state && history.state.ed) { skipPop = true; history.back(); } } catch (e) {} }
   }
   function readEditor() {
     if (!ed) return;
@@ -963,7 +1053,8 @@ body.locked { overflow: hidden; }
 
   // 폰의 뒤로가기: 확인 창 → 추가 창 순서로 닫혀요
   window.addEventListener('popstate', function () {
-    if (!edOpen) return;
+    if (skipPop) { skipPop = false; return; }   // 창이 스스로 닫히면서 생긴 뒤로가기
+    if (!edOpen) { if (dsOpen) closeDay(true); return; }
     if (askDone) { closeAsk(0); try { history.pushState({ ed: 1 }, ''); } catch (e) {} return; }
     if (snap() === edSnap) { closeEditor(true); return; }
     try { history.pushState({ ed: 1 }, ''); } catch (e) {}
