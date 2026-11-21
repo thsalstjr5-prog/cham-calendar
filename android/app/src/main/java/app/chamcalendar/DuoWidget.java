@@ -65,8 +65,12 @@ public class DuoWidget extends AppWidgetProvider {
         int lead = c.get(Calendar.DAY_OF_WEEK) - 1;
         int weeks = (int) Math.ceil((lead + c.getActualMaximum(Calendar.DAY_OF_MONTH)) / 7.0);
         c.add(Calendar.DAY_OF_MONTH, -lead);
-        float rowDp = (heightDp - 20 - 18 - 14) / (float) weeks;     // 위아래 여백, "11월", 요일 줄 빼고
+        // 월 제목과 요일 줄도 숫자와 같은 크기라서, 줄 수를 weeks + 2로 나눠요
+        float rowDp = (heightDp - 20 - 6) / (float) (weeks + 2);
         float numSp = Math.max(10f, Math.min(15f, rowDp * 0.62f));
+        v.setTextViewTextSize(R.id.w_month, TypedValue.COMPLEX_UNIT_SP, numSp + 2);   // 손글씨 글꼴이 작아 보여서 조금 더
+        int[] wd = {R.id.wd0, R.id.wd1, R.id.wd2, R.id.wd3, R.id.wd4, R.id.wd5, R.id.wd6};
+        for (int id : wd) v.setTextViewTextSize(id, TypedValue.COMPLEX_UNIT_SP, numSp);
         int textOn = st.custom ? st.on : ctx.getResources().getColor(R.color.w_on, ctx.getTheme());
         for (int w = 0; w < weeks; w++) {
             RemoteViews row = new RemoteViews(pkg, R.layout.w_week_row);

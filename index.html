@@ -561,14 +561,14 @@ body.locked { overflow: hidden; }
 
   // 달력 모양: 크게(일정 제목 보임) ↔ 작게(아래에 그날 일정)
   var compact = lsGet(KEY + '-view') === 'compact';
-  var SMALL = 50, bigH = 64;
+  var SMALL = 66, bigH = 64;   // SMALL: 위로 밀었을 때 칸 높이
   function cellH() {
     var cal = $('cal'), days = $('days');
     var weeks = Math.max(1, Math.round(days.children.length / 7));
     var top = cal.getBoundingClientRect().top + window.scrollY;
     var extra = cal.offsetHeight - days.offsetHeight;
     var avail = window.innerHeight - top - extra - 16 - $('quick').offsetHeight;
-    return Math.max(64, Math.floor(avail / weeks));
+    return Math.max(SMALL + 20, Math.floor(avail / weeks));
   }
   // t: 0 = 작은 달력, 1 = 큰 달력. 중간 값이면 그 사이 모양 (손가락 따라 움직일 때)
   function applyT(t) {
