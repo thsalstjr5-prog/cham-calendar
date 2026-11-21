@@ -90,7 +90,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--lav); outli
 .days.slide { transition: transform .22s ease-out, opacity .22s ease-out; }
 .day {
   min-height: var(--cell-h, 64px); border-radius: 12px; font-weight: 500; min-width: 0;
-  transition: min-height .28s ease;
+  transition: min-height .34s cubic-bezier(.2,.8,.2,1); overflow-y: clip;
   display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start;
   padding: 4px 2px 4px; gap: 2px; font-size: 15px; font-variant-numeric: tabular-nums; position: relative;
 }
@@ -107,17 +107,14 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--lav); outli
   display: block; font-size: 10px; line-height: 15px; height: 15px; padding: 0 3px; border-radius: 4px;
   white-space: nowrap; overflow: hidden; text-overflow: clip; font-weight: 600; color: var(--on-accent); text-align: left;
 }
-.chip { transition: height .2s ease, line-height .2s ease; }
+.chip { height: var(--chip-h, 15px); line-height: var(--chip-h, 15px); transition: height .34s cubic-bezier(.2,.8,.2,1), line-height .34s cubic-bezier(.2,.8,.2,1); }
+.chip b, .more { opacity: var(--chip-t, 1); transition: opacity .25s ease; }
+.cal.drag .day, .cal.drag .chip, .cal.drag .chip b, .cal.drag .more { transition: none; }
 .chip b { display: block; position: relative; z-index: 1; overflow: hidden; white-space: nowrap; font-weight: inherit; }
 .chip.cl { margin-left: -3px; border-top-left-radius: 0; border-bottom-left-radius: 0; }
 .chip.cr { margin-right: -3px; border-top-right-radius: 0; border-bottom-right-radius: 0; }
 .chip.gap { visibility: hidden; }
 .chip.wide { overflow: visible; }
-.cal.compact .day { min-height: 50px; }
-.cal.compact .chip { height: 3px; line-height: 3px; font-size: 0; padding: 0; border-radius: 2px; }
-.cal.compact .chip.cl { border-top-left-radius: 0; border-bottom-left-radius: 0; }
-.cal.compact .chip.cr { border-top-right-radius: 0; border-bottom-right-radius: 0; }
-.cal.compact .more { display: none; }
 .more { font-size: 10px; line-height: 12px; color: var(--muted); text-align: center; }
 .c-lav { background: var(--lav); } .c-peach { background: var(--peach); } .c-mint { background: var(--mint); } .c-sky { background: var(--sky); }
 .legend { display: flex; gap: 14px; justify-content: center; font-size: 12px; color: var(--muted); padding-top: 8px; }
@@ -325,8 +322,8 @@ input::placeholder { color: var(--muted); opacity: .8; }
 
   // 달력 모양: 크게(일정 제목 보임) ↔ 작게(아래에 그날 일정)
   var compact = lsGet(KEY + '-view') === 'compact';
+  var SMALL = 50, bigH = 64;
   function cellH() {
-    if (compact) return 50;
     var cal = $('cal'), days = $('days');
     var weeks = Math.max(1, Math.round(days.children.length / 7));
     var top = cal.getBoundingClientRect().top + window.scrollY;
@@ -334,16 +331,21 @@ input::placeholder { color: var(--muted); opacity: .8; }
     var avail = window.innerHeight - top - extra - 20;
     return Math.max(64, Math.floor(avail / weeks));
   }
-  function applyView() {
+  // t: 0 = 작은 달력, 1 = 큰 달력. 중간 값이면 그 사이 모양 (손가락 따라 움직일 때)
+  function applyT(t) {
     var cal = $('cal');
-    cal.classList.toggle('compact', compact);
+    cal.style.setProperty('--cell-h', (SMALL + (bigH - SMALL) * t).toFixed(1) + 'px');
+    cal.style.setProperty('--chip-h', (3 + 12 * t).toFixed(2) + 'px');
+    cal.style.setProperty('--chip-t', Math.max(0, Math.min(1, (t - .45) / .55)).toFixed(3));
+  }
+  function applyView() {
+    $('cal').classList.toggle('compact', compact);
     $('hint').textContent = compact ? '아래로 밀면 달력이 커져요' : '위로 밀면 그날 일정이 보여요';
-    if (!compact) cal.style.setProperty('--cell-h', cellH() + 'px'); else cal.style.removeProperty('--cell-h');
+    applyT(compact ? 0 : 1);
   }
   function setCompact(c) {
-    if (c === compact) return;
-    compact = c; lsSet(KEY + '-view', c ? 'compact' : 'big');
-    applyView(); renderGrid();
+    if (c !== compact) { compact = c; lsSet(KEY + '-view', c ? 'compact' : 'big'); }
+    applyView();
     if (!c) window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
   }
 
@@ -354,7 +356,7 @@ input::placeholder { color: var(--muted); opacity: .8; }
     var start = new Date(view); start.setDate(1 - view.getDay());
     var weeks = Math.ceil((view.getDay() + new Date(view.getFullYear(), view.getMonth() + 1, 0).getDate()) / 7);
     var all = allSpans();
-    var maxL = compact ? 3 : Math.max(1, Math.min(5, Math.floor((cellH() - 34) / 17)));
+    var maxL = Math.max(1, Math.min(5, Math.floor((bigH - 34) / 17)));
     for (var w = 0; w < weeks; w++) {
       var dk = [], dd = [];
       for (var j = 0; j < 7; j++) { var d0 = new Date(start); d0.setDate(start.getDate() + w * 7 + j); dd.push(d0); dk.push(key(d0)); }
@@ -414,7 +416,8 @@ input::placeholder { color: var(--muted); opacity: .8; }
         days.appendChild(b2);
       }
     }
-    if (!compact) { var h = cellH() + 'px'; if ($('cal').style.getPropertyValue('--cell-h') !== h) { $('cal').style.setProperty('--cell-h', h); renderGrid(); } }
+    var nb = cellH();
+    if (nb !== bigH) { bigH = nb; if (!$('cal').classList.contains('drag')) applyT(compact ? 0 : 1); renderGrid(); }
   }
 
   function setColor(c) {
@@ -487,7 +490,11 @@ input::placeholder { color: var(--muted); opacity: .8; }
     sel = new Date(+p[0], +p[1] - 1, +p[2]);
     if (sel.getMonth() !== view.getMonth()) { go(sel.getFullYear() * 12 + sel.getMonth() > view.getFullYear() * 12 + view.getMonth() ? 1 : -1, true); }
     if (editing || !$('evTitle').value) resetEvForm();
-    if (!compact) { setCompact(true); renderPanel(); return; }
+    if (!compact && b.dataset.k.slice(0, 7) === key(view).slice(0, 7)) {
+      Array.prototype.forEach.call(document.querySelectorAll('.day.sel'), function (x) { x.classList.remove('sel'); });
+      b.classList.add('sel'); setCompact(true); renderPanel(); return;
+    }
+    if (!compact) setCompact(true);
     render();
   });
 
@@ -517,6 +524,7 @@ input::placeholder { color: var(--muted); opacity: .8; }
 
   (function swipe() {
     var cal = $('cal'), days = $('days'), x0 = 0, y0 = 0, dx = 0, mode = null, id = null;
+    var t0 = 0, t = 0, lastY = 0, lastT = 0, vy = 0;
     cal.addEventListener('pointerdown', function (e) {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
       id = e.pointerId; x0 = e.clientX; y0 = e.clientY; dx = 0; mode = null; dragged = false;
@@ -526,15 +534,31 @@ input::placeholder { color: var(--muted); opacity: .8; }
       var mx = e.clientX - x0, my = e.clientY - y0;
       if (!mode) {
         if (Math.abs(mx) > 10 && Math.abs(mx) > Math.abs(my) * 1.2) { mode = 'x'; try { cal.setPointerCapture(id); } catch (er) {} }
-        else if (Math.abs(my) > 10) { mode = 'y'; try { cal.setPointerCapture(id); } catch (er) {} }
+        else if (Math.abs(my) > 10) {
+          mode = 'y'; try { cal.setPointerCapture(id); } catch (er) {}
+          t0 = compact ? 0 : 1; y0 = e.clientY; lastY = e.clientY; lastT = e.timeStamp; vy = 0;
+          cal.classList.add('drag');
+        }
+      }
+      if (mode === 'y') {
+        var weeks = Math.max(1, Math.round(days.children.length / 7));
+        t = Math.max(0, Math.min(1, t0 + (e.clientY - y0) / (weeks * (bigH - SMALL))));
+        var dt = e.timeStamp - lastT;
+        if (dt > 0) vy = .7 * vy + .3 * ((e.clientY - lastY) / dt);
+        lastY = e.clientY; lastT = e.timeStamp;
+        applyT(t);
       }
       if (mode === 'x') { dx = mx; days.classList.remove('slide'); days.style.transform = 'translateX(' + dx + 'px)'; days.style.opacity = String(1 - Math.min(Math.abs(dx) / 400, .5)); }
     });
     function end(e) {
       if (e.pointerId !== id) return; id = null;
       if (mode === 'y') {
-        var my = e.clientY - y0;
-        if (Math.abs(my) > 40) { dragged = true; setTimeout(function () { dragged = false; }, 50); setCompact(my < 0); }
+        dragged = true; setTimeout(function () { dragged = false; }, 50);
+        // 빠르게 튕기면 그 방향으로, 아니면 반 넘게 움직였을 때만 바뀌어요
+        var big = vy > .35 ? true : vy < -.35 ? false : t > .5;
+        void cal.offsetHeight;          // 지금 모양에서부터 부드럽게 이어서 움직이게
+        cal.classList.remove('drag');
+        setCompact(!big);
         return;
       }
       if (mode !== 'x') return;
