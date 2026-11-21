@@ -118,9 +118,11 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--lav); outli
 .chip.cr { margin-right: -3px; border-top-right-radius: 0; border-bottom-right-radius: 0; }
 .chip.gap { visibility: hidden; }
 /* 긴 제목: 두 줄로 (큰 달력에서). 작은 달력에서는 가는 줄 그대로 */
-.chip.l2 { height: calc(var(--chip-h, 15px) * 2 - 2px); }
-.chip.l3 { height: calc(var(--chip-h, 15px) * 3 - 4px); }
-.chip.l2 b, .chip.l3 b { white-space: normal; word-break: break-all; line-height: 13px; padding-top: 1px; height: 100%; overflow: hidden; }
+.chip.ml { height: calc(var(--chip-h, 15px) + var(--ext, 0px) * var(--chip-k, 1)); }
+.chip.pad { margin-bottom: calc(var(--pad, 0px) * var(--chip-k, 1)); }
+.chip.ml b, #chipProbe { white-space: normal; word-break: break-all; line-height: 1.3em; padding-top: 1px; overflow: hidden; }
+.chip.ml b { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; line-clamp: 4; }
+#chipProbe { position: absolute; left: -9999px; top: 0; visibility: hidden; font-size: 10px; font-weight: 600; padding: 1px 0 0; display: block; }
 .chip.wide { overflow: visible; }
 .more { font-size: 10px; line-height: 12px; color: var(--muted); text-align: center; }
 .c-lav { background: var(--lav); } .c-peach { background: var(--peach); } .c-mint { background: var(--mint); } .c-sky { background: var(--sky); }
@@ -579,6 +581,7 @@ body.locked { overflow: hidden; }
     var cal = $('cal');
     cal.style.setProperty('--cell-h', (SMALL + (bigH - SMALL) * t).toFixed(1) + 'px');
     cal.style.setProperty('--chip-h', (3 + 12 * t).toFixed(2) + 'px');
+    cal.style.setProperty('--chip-k', t.toFixed(3));
     cal.style.setProperty('--chip-t', Math.max(0, Math.min(1, (t - .45) / .55)).toFixed(3));
   }
   function applyView() {
@@ -592,14 +595,21 @@ body.locked { overflow: hidden; }
     if (!c) window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
   }
 
-  // 일정 글자 폭 재기 (칸에 들어가는지 보려고)
-  var measureCtx = null;
-  function textW(t) {
-    try {
-      if (!measureCtx) { measureCtx = document.createElement('canvas').getContext('2d'); }
-      measureCtx.font = '600 10px ' + getComputedStyle(document.body).fontFamily;
-      return measureCtx.measureText(t).width;
-    } catch (e) { return t.length * 10; }
+  // 일정 제목이 칸에서 몇 줄이 되는지 실제 글씨로 재기 (폰 글자 크기 설정까지 반영)
+  // 돌려주는 값: 한 줄 칩보다 더 필요한 높이(px). 최대 네 줄.
+  var extCache = {};
+  function titleExt(t) {
+    var w = Math.max(16, Math.floor(cellW - 10));
+    var ck = w + '|' + t;
+    if (ck in extCache) return extCache[ck];
+    var pr = $('chipProbe');
+    if (!pr) { pr = document.createElement('b'); pr.id = 'chipProbe'; $('cal').appendChild(pr); }
+    pr.style.width = w + 'px';
+    pr.textContent = '가'; var one = pr.offsetHeight - 1;
+    pr.textContent = t; var all = pr.offsetHeight - 1;
+    var n = Math.min(4, Math.round(all / Math.max(1, one)));
+    var ext = n > 1 ? Math.ceil(n * one + 3 - 15) : 0;
+    return (extCache[ck] = Math.max(0, ext));
   }
   var cellW = 54;
 
@@ -633,18 +643,19 @@ body.locked { overflow: hidden; }
         }
         for (var y = a; y <= b; y++) lanes[L][y] = true;
         placed.push({ o: o, a: a, b: b, L: L });
-        // 하루짜리 일정 제목이 칸보다 길면 그 줄(lane)은 두 줄 높이로 (같은 줄의 막대 높이가 맞게)
-        var need = a === b ? Math.min(3, Math.ceil(textW(o.v.title) / Math.max(20, cellW - 8))) : 1;
-        lines[L] = Math.max(lines[L] || 1, need);
+        // 하루짜리 일정 제목이 칸보다 길면 그 일정만 키우고, 같은 줄(lane)은 그만큼 자리만 비워 둬요
+        var ext = a === b ? titleExt(o.v.title) : 0;
+        placed[placed.length - 1].ext = ext;
+        lines[L] = Math.max(lines[L] || 0, ext);
       });
-      // 칸 높이 안에 들어가는 줄 수 (두 줄짜리는 자리를 더 차지해요)
+      // 칸 높이 안에 들어가는 줄 수 (긴 제목 줄은 자리를 더 차지해요)
       var room = bigH - 34, vis = 0;
-      var laneH = function (n) { return 4 + 13 * (n || 1); };
+      var laneH = function (x) { return 17 + (x || 0); };
       while (vis < lines.length && room >= laneH(lines[vis])) { room -= laneH(lines[vis]); vis++; }
       vis = Math.max(1, Math.min(vis, 6));
       placed.forEach(function (pl) {
         for (var y = pl.a; y <= pl.b; y++) {
-          if (pl.L < vis) cells[y][pl.L] = { o: pl.o, first: y === pl.a, n: pl.b - pl.a + 1, lines: lines[pl.L] || 1 };
+          if (pl.L < vis) cells[y][pl.L] = { o: pl.o, first: y === pl.a, n: pl.b - pl.a + 1, ext: pl.ext || 0, pad: (lines[pl.L] || 0) - (pl.ext || 0) };
           else hidden[y]++;
         }
       });
@@ -663,13 +674,16 @@ body.locked { overflow: hidden; }
         if (e && e.todos.length) dot = e.todos.every(function (t) { return t.done; }) ? '<i class="d"></i>' : '<i class="t"></i>';
         for (var L2 = 0; L2 < cells[i].length; L2++) {
           var c = cells[i][L2];
-          if (!c) { chips += '<span class="chip gap' + (lines[L2] > 1 ? ' l' + lines[L2] : '') + '"></span>'; continue; }
+          if (!c) { chips += '<span class="chip gap' + (lines[L2] ? ' ml" style="--ext:' + lines[L2] + 'px' : '') + '"></span>'; continue; }
           cnt++;
-          var cls = 'chip ' + colorCls(c.o.v.color) + (c.o.s < k ? ' cl' : '') + (c.o.e > k ? ' cr' : '') + (c.lines > 1 ? ' l' + c.lines : '');
+          var cls = 'chip ' + colorCls(c.o.v.color) + (c.o.s < k ? ' cl' : '') + (c.o.e > k ? ' cr' : '') + (c.ext ? ' ml' : '') + (c.pad ? ' pad' : '');
           var txt = '';
           if (c.first) txt = '<b' + (c.n > 1 ? ' style="width:calc(' + c.n + '00% + ' + (c.n - 1) * 4 + 'px)"' : '') + '>' + esc(c.o.v.title) + '</b>';
           if (c.first && c.n > 1) cls += ' wide';
-          chips += '<span class="' + cls + '"' + colorSty(c.o.v.color) + '>' + txt + '</span>';
+          var vs = (c.ext ? '--ext:' + c.ext + 'px;' : '') + (c.pad ? '--pad:' + c.pad + 'px;' : '');
+          var st = colorSty(c.o.v.color);
+          if (vs) st = st ? st.replace('style="', 'style="' + vs) : ' style="' + vs + '"';
+          chips += '<span class="' + cls + '"' + st + '>' + txt + '</span>';
         }
         if (hidden[i]) chips += '<span class="more">+' + hidden[i] + '</span>';
         cnt += hidden[i];
