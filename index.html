@@ -579,7 +579,7 @@ body.locked { overflow: hidden; }
   }
   function applyView() {
     $('cal').classList.toggle('compact', compact);
-    $('hint').textContent = compact ? '아래로 밀면 달력이 커져요 · 날짜를 누르면 일정' : '위로 밀면 달력이 작아져요 · 날짜를 누르면 일정';
+    $('hint').textContent = compact ? '아래로 밀면 달력이 커져요 · 고른 날짜를 한 번 더 누르면 일정' : '위로 밀면 달력이 작아져요 · 고른 날짜를 한 번 더 누르면 일정';
     applyT(compact ? 0 : 1);
   }
   function setCompact(c) {
@@ -700,16 +700,16 @@ body.locked { overflow: hidden; }
   function renderDay() { fillDay(INLINE); if (dsOpen) fillDay(SHEET); }
   function render() { renderGrid(); renderDay(); }
 
-  // 날짜 누르기: 목록만 그날로 (큰 달력이면 부드럽게 작아지면서)
+  // 날짜 누르기: 처음 누르면 그날을 고르기만, 이미 고른 날을 한 번 더 누르면 팝업
   var dragged = false;
   $('days').addEventListener('click', function (ev) {
     if (dragged) { dragged = false; return; }
     var b = ev.target.closest('.day'); if (!b) return;
     var k = b.dataset.k;
+    if (k === key(sel)) { openDay(); return; }
     sel = kDate(k);
     if (sel.getMonth() !== view.getMonth()) go(sel.getFullYear() * 12 + sel.getMonth() > view.getFullYear() * 12 + view.getMonth() ? 1 : -1, true);
     render();
-    openDay();
   });
 
   // ───── 날짜 팝업 ─────
