@@ -12,8 +12,6 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
 
-import org.json.JSONArray;
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -48,15 +46,10 @@ public class ChamCalPlugin extends Plugin {
         if (!ok()) { call.reject("캘린더 권한이 없어요", "NO_PERMISSION"); return; }
         try {
             JSObject r = new JSObject();
-            r.put("calendars", JSArray.from(toList(SystemCal.calendars(getContext()))));
+            // JSONArray → JSArray (JSArray.from은 자바 배열만 받아서 목록이 비어버렸어요)
+            r.put("calendars", new JSArray(SystemCal.calendars(getContext()).toString()));
             call.resolve(r);
         } catch (Exception e) { call.reject(e.getMessage()); }
-    }
-
-    private static java.util.List<Object> toList(JSONArray a) {
-        java.util.List<Object> l = new java.util.ArrayList<>();
-        for (int i = 0; i < a.length(); i++) l.add(a.opt(i));
-        return l;
     }
 
     @PluginMethod

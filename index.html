@@ -1219,16 +1219,19 @@ body.locked { overflow: hidden; }
       return '<label class="fr calrow"><span class="cdot" style="background:' + esc(c.color) + '"></span><span class="cn">' + esc(c.name || '(이름 없음)') +
         (c.account && c.account !== c.name ? '<small>' + esc(c.account) + '</small>' : '') + '</span>' +
         '<input type="checkbox" class="toggle" data-id="' + c.id + '"' + (sysCfg.show.indexOf(c.id) >= 0 ? ' checked' : '') + ' aria-label="' + esc(c.name) + ' 보이기"></label>';
-    }).join('') || '<p class="empty">폰에 캘린더가 없어요.</p>';
+    }).join('') || '<p class="empty">폰에서 캘린더를 찾지 못했어요. 삼성 캘린더 앱을 한 번 열어 본 뒤, 이 스위치를 껐다 다시 켜 주세요.</p>';
     var opts = [['local', '챔의 달력']].concat(sysCals.filter(function (c) { return c.writable; }).map(function (c) { return [String(c.id), c.name + (c.account && c.account !== c.name ? ' · ' + c.account : '')]; }));
     $('sysTarget').innerHTML = opts.map(function (o) { return '<option value="' + esc(o[0]) + '">' + esc(o[1]) + '</option>'; }).join('');
     $('sysTarget').value = sysCfg.target;
   }
   function sysLoadCals() {
     return Sys.calendars().then(function (r) {
-      sysCals = (r && r.calendars) || [];
+      sysCals = (r && Array.isArray(r.calendars)) ? r.calendars : [];
       sysList.forEach(function (x) { x._v = null; });
       renderSys();
+    }, function (err) {
+      sysCals = []; renderSys();
+      note('캘린더 목록을 읽지 못했어요. ' + ((err && err.message) || ''));
     });
   }
   $('sysOn').addEventListener('change', function () {
@@ -1242,7 +1245,9 @@ body.locked { overflow: hidden; }
       }
       sysCfg.on = true;
       sysLoadCals().then(function () {
+        sysCfg.show = sysCfg.show.filter(function (id) { return !!calById(id); });
         if (!sysCfg.show.length) sysCfg.show = sysCals.filter(function (c) { return c.visible; }).map(function (c) { return c.id; });
+        if (!sysCfg.show.length) sysCfg.show = sysCals.map(function (c) { return c.id; });
         if (sysCfg.target === 'local' || !calById(+sysCfg.target)) sysCfg.target = pickTarget();
         sysStore(); renderSys(); sysRefresh(); note('삼성 캘린더와 연결했어요.');
       });
@@ -1429,7 +1434,15 @@ body.locked { overflow: hidden; }
       if (!sysCfg.on) { renderSys(); return; }
       Sys.status().then(function (r) {
         if (!r || !r.granted) { sysCfg.on = false; renderSys(); return; }
-        sysLoadCals().then(sysRefresh);
+        sysLoadCals().then(function () {
+          // 지난번에 캘린더 목록을 못 받아 비어 있던 설정을 바로잡아요
+          var before = JSON.stringify(sysCfg);
+          sysCfg.show = sysCfg.show.filter(function (id) { return !!calById(id); });
+          if (!sysCfg.show.length) sysCfg.show = sysCals.filter(function (c) { return c.visible; }).map(function (c) { return c.id; });
+          if (sysCfg.target === 'local' && before.indexOf('"show":[]') >= 0) sysCfg.target = pickTarget();
+          if (JSON.stringify(sysCfg) !== before) { sysStore(); renderSys(); }
+          sysRefresh();
+        });
       });
     });
   });
