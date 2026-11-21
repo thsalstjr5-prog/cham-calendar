@@ -124,6 +124,25 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--lav); outli
 /* day panel */
 .panel { background: var(--surface); border-radius: 22px; padding: 18px 16px; display: flex; flex-direction: column; gap: 18px; }
 .panel h2 { margin: 0; font-family: var(--hand); font-size: 24px; line-height: 1.3; font-weight: 400; text-wrap: balance; }
+.panel .grab, .panel .x { display: none; }
+#scrim { position: fixed; inset: 0; background: rgba(24, 20, 30, .42); z-index: 19; opacity: 0; transition: opacity .28s ease; }
+#scrim.on { opacity: 1; }
+.panel.sheet {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; margin: 0 auto; width: 100%; max-width: 520px;
+  max-height: 86vh; max-height: 86dvh; overflow-y: auto; overscroll-behavior: contain;
+  border-radius: 24px 24px 0 0; padding-top: 8px;
+  padding-bottom: calc(22px + env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  box-shadow: 0 -8px 30px rgba(20, 16, 26, .18);
+  transform: translateY(100%); transition: transform .34s cubic-bezier(.2,.8,.2,1);
+}
+.panel.sheet.up { transform: translateY(0); }
+.panel.sheet.drag { transition: none; }
+.panel.sheet .grab { display: block; width: 100%; height: 22px; margin-bottom: -12px; touch-action: none; position: relative; }
+.panel.sheet .grab::before { content: ""; position: absolute; left: 50%; top: 6px; width: 40px; height: 4px; margin-left: -20px; border-radius: 2px; background: var(--muted); opacity: .45; }
+.panel .head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.panel.sheet .x { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 20px; background: var(--surface-2); color: var(--muted); font-size: 18px; flex: none; }
+body.locked { overflow: hidden; }
 .panel h2 small { font-family: var(--font); color: var(--peach); font-size: 13px; font-weight: 500; margin-left: 6px; vertical-align: 4px; }
 .label { font-size: 13px; font-weight: 600; color: var(--muted); letter-spacing: .04em; margin-bottom: 6px; display: flex; justify-content: space-between; }
 input::placeholder { color: var(--muted); opacity: .8; }
@@ -185,8 +204,9 @@ input::placeholder { color: var(--muted); opacity: .8; }
     <div class="hint" id="hint"></div>
   </section>
 
-  <section class="panel" aria-live="polite">
-    <h2 id="dayTitle"></h2>
+  <section class="panel" id="panel" aria-live="polite">
+    <div class="grab" id="grab" aria-hidden="true"></div>
+    <div class="head"><h2 id="dayTitle"></h2><button class="x" id="closeSheet" aria-label="닫기">✕</button></div>
     <div>
       <div class="label"><span>일정</span><span id="evCount"></span></div>
       <ul class="list" id="events"></ul>
@@ -215,6 +235,7 @@ input::placeholder { color: var(--muted); opacity: .8; }
     </div>
   </section>
 
+  <div id="scrim" hidden></div>
   <div class="foot">
     <button id="theme">화면 더 어둡게</button>
     <button id="backup">백업 저장</button>
@@ -486,16 +507,14 @@ input::placeholder { color: var(--muted); opacity: .8; }
   $('days').addEventListener('click', function (ev) {
     if (dragged) { dragged = false; return; }
     var b = ev.target.closest('.day'); if (!b) return;
+    var again = b.dataset.k === key(sel);
     var p = b.dataset.k.split('-');
     sel = new Date(+p[0], +p[1] - 1, +p[2]);
     if (sel.getMonth() !== view.getMonth()) { go(sel.getFullYear() * 12 + sel.getMonth() > view.getFullYear() * 12 + view.getMonth() ? 1 : -1, true); }
     if (editing || !$('evTitle').value) resetEvForm();
-    if (!compact && b.dataset.k.slice(0, 7) === key(view).slice(0, 7)) {
-      Array.prototype.forEach.call(document.querySelectorAll('.day.sel'), function (x) { x.classList.remove('sel'); });
-      b.classList.add('sel'); setCompact(true); renderPanel(); return;
-    }
-    if (!compact) setCompact(true);
     render();
+    // 큰 달력: 바로 팝업 / 작은 달력: 같은 날짜를 한 번 더 누르면 팝업
+    if (!compact || again) openSheet();
   });
 
   // 달 넘기기 (버튼 + 스와이프)
@@ -660,12 +679,69 @@ input::placeholder { color: var(--muted); opacity: .8; }
     if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {});
   }
 
+  // 날짜 팝업 (아래에서 올라오는 창)
+  var panel = $('panel'), scrim = $('scrim'), sheetOpen = false;
+  function openSheet() {
+    if (sheetOpen) return;
+    sheetOpen = true;
+    panel.classList.add('sheet'); scrim.hidden = false; document.body.classList.add('locked');
+    panel.scrollTop = 0;
+    try { history.pushState({ sheet: 1 }, ''); } catch (e) {}
+    void panel.offsetHeight;
+    panel.classList.add('up'); scrim.classList.add('on');
+  }
+  function closeSheet(fromBack) {
+    if (!sheetOpen) return;
+    sheetOpen = false;
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    panel.classList.remove('up', 'drag'); panel.style.transform = ''; scrim.classList.remove('on');
+    setTimeout(function () {
+      if (sheetOpen) return;
+      panel.classList.remove('sheet'); scrim.hidden = true; document.body.classList.remove('locked');
+    }, reduce ? 0 : 340);
+    if (!fromBack) { try { if (history.state && history.state.sheet) history.back(); } catch (e) {} }
+  }
+  window.addEventListener('popstate', function () { closeSheet(true); });
+  scrim.addEventListener('click', function () { closeSheet(); });
+  $('closeSheet').onclick = function () { closeSheet(); };
+  // 팝업 위쪽을 아래로 끌어내리면 닫혀요
+  (function () {
+    var y0 = null, dy = 0, pid = null;
+    function down(e) {
+      if (!sheetOpen) return;
+      if (e.clientY - panel.getBoundingClientRect().top > 80 && !e.target.closest('.grab, .head')) return;
+      if (e.target.closest('button')) return;
+      pid = e.pointerId; y0 = e.clientY; dy = 0;
+      try { panel.setPointerCapture(pid); } catch (er) {}
+      panel.classList.add('drag');
+    }
+    panel.addEventListener('pointerdown', down);
+    panel.addEventListener('pointermove', function (e) {
+      if (e.pointerId !== pid) return;
+      dy = Math.max(0, e.clientY - y0);
+      panel.style.transform = 'translateY(' + dy + 'px)';
+      scrim.style.opacity = String(Math.max(0, 1 - dy / 400));
+    });
+    function up(e) {
+      if (e.pointerId !== pid) return; pid = null;
+      panel.classList.remove('drag'); scrim.style.opacity = '';
+      if (dy > 90) closeSheet(); else panel.style.transform = '';
+    }
+    panel.addEventListener('pointerup', up);
+    panel.addEventListener('pointercancel', up);
+  })();
+
   // 자판이 올라오면 입력칸과 그 위 목록이 같이 보이게 스크롤
   var focusedBox = null;
   function showBox() {
     if (!focusedBox) return;
     var vv = window.visualViewport, vh = vv ? vv.height : window.innerHeight;
     var r = focusedBox.getBoundingClientRect(), pad = 12;
+    if (sheetOpen) {
+      var pr = panel.getBoundingClientRect(), top = Math.max(pr.top, 0), bottom = Math.min(pr.bottom, vh);
+      if (r.height + pad * 2 > bottom - top || r.bottom > bottom - pad || r.top < top + pad) panel.scrollTop += r.bottom - bottom + pad;
+      return;
+    }
     if (r.height + pad * 2 > vh) { // 목록이 길면 입력칸이 자판 바로 위에 오게
       window.scrollBy(0, r.bottom - vh + pad);
     } else if (r.bottom > vh - pad || r.top < pad) {
