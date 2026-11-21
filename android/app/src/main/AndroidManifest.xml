@@ -48,6 +48,13 @@
             </intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/w_month_info" />
         </receiver>
+
+        <receiver android:name=".DuoWidget" android:exported="false" android:label="달력 + 오늘·내일">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/w_duo_info" />
+        </receiver>
     </application>
 
     <!-- Permissions -->

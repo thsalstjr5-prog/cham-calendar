@@ -12,6 +12,7 @@ import java.util.Calendar;
 /** 위젯 새로 그리기: 앱을 나갈 때, 자정이 지날 때, 30분마다. */
 final class WidgetRefresh {
     static final String ACTION_MIDNIGHT = "app.chamcalendar.MIDNIGHT";
+    static final String ACTION_ADD = "app.chamcalendar.ADD";
 
     static void all(Context ctx) {
         AppWidgetManager m = AppWidgetManager.getInstance(ctx);
@@ -19,6 +20,8 @@ final class WidgetRefresh {
         if (today.length > 0) TodayWidget.draw(ctx, m, today);
         int[] month = m.getAppWidgetIds(new ComponentName(ctx, MonthWidget.class));
         if (month.length > 0) MonthWidget.draw(ctx, m, month);
+        int[] duo = m.getAppWidgetIds(new ComponentName(ctx, DuoWidget.class));
+        if (duo.length > 0) DuoWidget.draw(ctx, m, duo);
         scheduleMidnight(ctx);
     }
 
@@ -26,6 +29,14 @@ final class WidgetRefresh {
         Intent i = new Intent(ctx, MainActivity.class);
         i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         return PendingIntent.getActivity(ctx, 0, i, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+    }
+
+    /** 위젯의 + 버튼: 앱을 열고 바로 일정 추가 창을 띄워요. */
+    static PendingIntent openAdd(Context ctx) {
+        Intent i = new Intent(ctx, MainActivity.class);
+        i.setAction(ACTION_ADD);
+        i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        return PendingIntent.getActivity(ctx, 2, i, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
     }
 
     static void scheduleMidnight(Context ctx) {

@@ -1,5 +1,7 @@
 package app.chamcalendar;
 
+import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.ViewGroup.MarginLayoutParams;
 
@@ -12,6 +14,7 @@ import com.getcapacitor.BridgeActivity;
 public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        takeWidgetAction(getIntent());
         super.onCreate(savedInstanceState);
         // 자판이 올라오면 화면을 자판 위까지만 쓰도록 (자판이 목록을 덮지 않게)
         if (getBridge() == null || getBridge().getWebView() == null) return;
@@ -26,6 +29,22 @@ public class MainActivity extends BridgeActivity {
             v.setLayoutParams(mlp);
             return WindowInsetsCompat.CONSUMED;
         });
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        if (takeWidgetAction(intent) && getBridge() != null && getBridge().getWebView() != null) {
+            getBridge().getWebView().post(() -> getBridge().getWebView().evaluateJavascript("window.chamCheckOpen && chamCheckOpen()", null));
+        }
+    }
+
+    /** 위젯의 + 버튼으로 열렸으면 앱(웹 화면)이 읽을 수 있게 표시해 둬요. */
+    private boolean takeWidgetAction(Intent intent) {
+        if (intent == null || !WidgetRefresh.ACTION_ADD.equals(intent.getAction())) return false;
+        getSharedPreferences(CalendarData.PREFS, Context.MODE_PRIVATE).edit().putString(CalendarData.KEY + "-open", "add").commit();
+        intent.setAction(Intent.ACTION_MAIN);
+        return true;
     }
 
     @Override

@@ -1119,9 +1119,28 @@ body.locked { overflow: hidden; }
     r.readAsText(f); this.value = '';
   };
 
+  // 홈 화면 위젯의 + 버튼으로 열렸으면 오늘 날짜로 추가 창을 바로 띄워요
+  var loaded = false;
+  function checkOpen() {
+    if (!loaded) return;
+    getItem(KEY + '-open').then(function (v) {
+      if (v !== 'add') return;
+      setItem(KEY + '-open', '');
+      now = new Date();
+      sel = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      view = new Date(now.getFullYear(), now.getMonth(), 1);
+      if (dsOpen) closeDay();
+      render();
+      if (!edOpen) openEditor({});
+    });
+  }
+  window.chamCheckOpen = checkOpen;
+
   // 날짜가 바뀐 뒤 다시 열면 오늘 표시를 고쳐요
   document.addEventListener('visibilitychange', function () {
-    if (document.visibilityState === 'visible' && key(new Date()) !== key(now)) { now = new Date(); renderGrid(); }
+    if (document.visibilityState !== 'visible') return;
+    if (key(new Date()) !== key(now)) { now = new Date(); renderGrid(); }
+    checkOpen();
   });
   window.addEventListener('resize', function () {
     if (document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
@@ -1141,6 +1160,7 @@ body.locked { overflow: hidden; }
     if (v[0] && JSON.stringify(store) !== v[0]) persist();
     applyTheme(v[1]);
     render();
+    loaded = true; checkOpen();
   });
   render();
 })();
