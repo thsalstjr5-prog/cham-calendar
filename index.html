@@ -117,6 +117,10 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--lav); outli
 .chip.cl { margin-left: -3px; border-top-left-radius: 0; border-bottom-left-radius: 0; }
 .chip.cr { margin-right: -3px; border-top-right-radius: 0; border-bottom-right-radius: 0; }
 .chip.gap { visibility: hidden; }
+/* 긴 제목: 두 줄로 (큰 달력에서). 작은 달력에서는 가는 줄 그대로 */
+.chip.l2 { height: calc(var(--chip-h, 15px) * 2 - 2px); }
+.chip.l3 { height: calc(var(--chip-h, 15px) * 3 - 4px); }
+.chip.l2 b, .chip.l3 b { white-space: normal; word-break: break-all; line-height: 13px; padding-top: 1px; height: 100%; overflow: hidden; }
 .chip.wide { overflow: visible; }
 .more { font-size: 10px; line-height: 12px; color: var(--muted); text-align: center; }
 .c-lav { background: var(--lav); } .c-peach { background: var(--peach); } .c-mint { background: var(--mint); } .c-sky { background: var(--sky); }
@@ -588,7 +592,19 @@ body.locked { overflow: hidden; }
     if (!c) window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
   }
 
+  // 일정 글자 폭 재기 (칸에 들어가는지 보려고)
+  var measureCtx = null;
+  function textW(t) {
+    try {
+      if (!measureCtx) { measureCtx = document.createElement('canvas').getContext('2d'); }
+      measureCtx.font = '600 10px ' + getComputedStyle(document.body).fontFamily;
+      return measureCtx.measureText(t).width;
+    } catch (e) { return t.length * 10; }
+  }
+  var cellW = 54;
+
   function renderGrid() {
+    cellW = ($('days').clientWidth || 378) / 7;
     $('title').textContent = (view.getMonth() + 1) + '월';
     $('year').textContent = view.getFullYear();
     var days = $('days'); days.innerHTML = '';
@@ -597,13 +613,13 @@ body.locked { overflow: hidden; }
     var gEnd = new Date(start); gEnd.setDate(start.getDate() + weeks * 7 - 1);
     sysEnsure(key(start), key(gEnd));
     var all = occs(key(start), key(gEnd));
-    var maxL = Math.max(1, Math.min(5, Math.floor((bigH - 34) / 17)));
     for (var w = 0; w < weeks; w++) {
       var dk = [], dd = [];
       for (var j = 0; j < 7; j++) { var d0 = new Date(start); d0.setDate(start.getDate() + w * 7 + j); dd.push(d0); dk.push(key(d0)); }
       // 이번 주에 걸친 일정마다 줄(lane)을 정해서 기간 막대가 같은 높이로 이어지게
       var wk = all.filter(function (o) { return o.s <= dk[6] && o.e >= dk[0]; }).sort(spanOrder);
       var lanes = [], cells = [[], [], [], [], [], [], []], hidden = [0, 0, 0, 0, 0, 0, 0];
+      var placed = [], lines = [];
       wk.forEach(function (o) {
         var a = 0, b = 6;
         while (dk[a] < o.s) a++;
@@ -615,9 +631,20 @@ body.locked { overflow: hidden; }
           for (var x = a; x <= b; x++) if (lanes[L][x]) { free = false; break; }
           if (free) break;
         }
-        for (var y = a; y <= b; y++) {
-          lanes[L][y] = true;
-          if (L < maxL) cells[y][L] = { o: o, first: y === a, n: b - a + 1 };
+        for (var y = a; y <= b; y++) lanes[L][y] = true;
+        placed.push({ o: o, a: a, b: b, L: L });
+        // 하루짜리 일정 제목이 칸보다 길면 그 줄(lane)은 두 줄 높이로 (같은 줄의 막대 높이가 맞게)
+        var need = a === b ? Math.min(3, Math.ceil(textW(o.v.title) / Math.max(20, cellW - 8))) : 1;
+        lines[L] = Math.max(lines[L] || 1, need);
+      });
+      // 칸 높이 안에 들어가는 줄 수 (두 줄짜리는 자리를 더 차지해요)
+      var room = bigH - 34, vis = 0;
+      var laneH = function (n) { return 4 + 13 * (n || 1); };
+      while (vis < lines.length && room >= laneH(lines[vis])) { room -= laneH(lines[vis]); vis++; }
+      vis = Math.max(1, Math.min(vis, 6));
+      placed.forEach(function (pl) {
+        for (var y = pl.a; y <= pl.b; y++) {
+          if (pl.L < vis) cells[y][pl.L] = { o: pl.o, first: y === pl.a, n: pl.b - pl.a + 1, lines: lines[pl.L] || 1 };
           else hidden[y]++;
         }
       });
@@ -636,9 +663,9 @@ body.locked { overflow: hidden; }
         if (e && e.todos.length) dot = e.todos.every(function (t) { return t.done; }) ? '<i class="d"></i>' : '<i class="t"></i>';
         for (var L2 = 0; L2 < cells[i].length; L2++) {
           var c = cells[i][L2];
-          if (!c) { chips += '<span class="chip gap"></span>'; continue; }
+          if (!c) { chips += '<span class="chip gap' + (lines[L2] > 1 ? ' l' + lines[L2] : '') + '"></span>'; continue; }
           cnt++;
-          var cls = 'chip ' + colorCls(c.o.v.color) + (c.o.s < k ? ' cl' : '') + (c.o.e > k ? ' cr' : '');
+          var cls = 'chip ' + colorCls(c.o.v.color) + (c.o.s < k ? ' cl' : '') + (c.o.e > k ? ' cr' : '') + (c.lines > 1 ? ' l' + c.lines : '');
           var txt = '';
           if (c.first) txt = '<b' + (c.n > 1 ? ' style="width:calc(' + c.n + '00% + ' + (c.n - 1) * 4 + 'px)"' : '') + '>' + esc(c.o.v.title) + '</b>';
           if (c.first && c.n > 1) cls += ' wide';
@@ -1157,7 +1184,12 @@ body.locked { overflow: hidden; }
   var RR = { day: 'FREQ=DAILY', week: 'FREQ=WEEKLY', month: 'FREQ=MONTHLY', year: 'FREQ=YEARLY' };
   function sysOn() { return !!(Sys && sysCfg.on); }
   function colorCls(c) { return COLORS.indexOf(c) >= 0 ? 'c-' + c : ''; }
-  function colorSty(c) { return /^#[0-9a-f]{6}$/i.test(c || '') ? ' style="background:' + c + '"' : ''; }
+  function colorSty(c) {
+    if (!/^#[0-9a-f]{6}$/i.test(c || '')) return '';
+    var n = parseInt(c.slice(1), 16), r = n >> 16 & 255, g = n >> 8 & 255, b = n & 255;
+    var light = (0.299 * r + 0.587 * g + 0.114 * b) > 170;   // 노랑처럼 밝은 색이면 글씨를 어둡게
+    return ' style="background:' + c + (light ? ';color:#2e2a33' : '') + '"';
+  }
   function palName(hex) {
     if (!hex) return 'lav';
     for (var k in PAL) if (PAL[k].toLowerCase() === hex.toLowerCase()) return k;
