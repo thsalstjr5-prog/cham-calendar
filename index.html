@@ -108,7 +108,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--lav); outli
 .day .num i.t { background: var(--peach); } .day .num i.d { background: var(--mint); }
 .chip {
   display: block; font-size: 9.5px; line-height: 15px; height: 15px; padding: 0 3px; border-radius: 4px;
-  white-space: nowrap; overflow: hidden; text-overflow: clip; font-weight: 600; color: var(--on-accent); text-align: left;
+  white-space: nowrap; overflow: hidden; text-overflow: clip; font-weight: 600; color: var(--on-accent); text-align: center;
 }
 .chip { height: var(--chip-h, 15px); line-height: var(--chip-h, 15px); transition: height .34s cubic-bezier(.2,.8,.2,1), line-height .34s cubic-bezier(.2,.8,.2,1); }
 .chip b, .more { opacity: var(--chip-t, 1); transition: opacity .25s ease; }
@@ -1464,6 +1464,9 @@ body.locked { overflow: hidden; }
   if (document.fonts) {
     var refit = function () { extCache = {}; renderGrid(); };
     if (document.fonts.ready) document.fonts.ready.then(refit);
+    // 일정 글꼴을 콕 집어 받아오고, 도착하면 다시 재기
+    if (document.fonts.load) document.fonts.load('600 9.5px "Gothic A1"', '가나다').then(refit, function () {});
+    setTimeout(refit, 1500); setTimeout(refit, 4000);
     if (document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', refit);
   }
 
