@@ -30,6 +30,7 @@ public class TodayWidget extends AppWidgetProvider {
 
     static void draw(Context ctx, AppWidgetManager m, int[] ids) {
         Calendar now = Calendar.getInstance();
+        CalendarData.loadSys(ctx, CalendarData.key(now), CalendarData.key(now));
         CalendarData.Day d = CalendarData.day(CalendarData.load(ctx), CalendarData.key(now));
         for (int id : ids) m.updateAppWidget(id, build(ctx, now, d, id));
     }
@@ -52,6 +53,7 @@ public class TodayWidget extends AppWidgetProvider {
             if (rows >= MAX_ROWS) break;
             RemoteViews r = new RemoteViews(pkg, R.layout.w_row_event);
             r.setImageViewResource(R.id.r_dot, CalendarData.dotRes(e.color));
+            if (e.colorInt != 0) r.setInt(R.id.r_dot, "setColorFilter", e.colorInt);
             r.setTextViewText(R.id.r_time, e.when != null ? e.when : CalendarData.fmtTime(e.time));
             r.setTextViewText(R.id.r_text, e.title);
             st.text(r, R.id.r_time, st.muted);

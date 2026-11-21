@@ -286,6 +286,12 @@ body.locked { overflow: hidden; }
 .srow .st { font-size: 15px; font-weight: 600; display: flex; flex-direction: column; gap: 2px; }
 .srow .st small { font-size: 12px; font-weight: 500; color: var(--muted); }
 .srow .sv { font-size: 14px; color: var(--lav); font-weight: 600; }
+.setbody .card + .card { margin-top: 10px; }
+.calrow { gap: 10px; }
+.calrow .cdot { width: 12px; height: 12px; border-radius: 6px; flex: none; }
+.calrow .cn { flex: 1; min-width: 0; font-size: 14px; display: flex; flex-direction: column; overflow-wrap: anywhere; }
+.calrow .cn small { font-size: 11.5px; color: var(--muted); }
+#sysCard .sec { padding: 10px 0 0; }
 .ver { text-align: center; font-size: 12px; color: var(--muted); margin: 6px 0 0; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
@@ -341,6 +347,15 @@ body.locked { overflow: hidden; }
       <button type="button" class="fr srow" id="restore"><span class="st">백업 불러오기<small>저장해 둔 백업 파일에서 가져와요</small></span><span class="sv">›</span></button>
     </div>
     <input type="file" id="restoreFile" accept="application/json,.json,text/plain,*/*" hidden>
+    <div class="card" id="sysCard">
+      <label class="fr srow"><span class="st">삼성 캘린더 연동<small id="sysSub">삼성·구글 캘린더 일정을 함께 보고, 고치면 양쪽에 똑같이 반영돼요</small></span><input type="checkbox" class="toggle" id="sysOn" role="switch"></label>
+      <div id="sysMore" hidden>
+        <div class="sec">보여줄 캘린더</div>
+        <div id="sysCals"></div>
+        <div class="fr"><span class="lb">새 일정</span><select id="sysTarget" aria-label="새 일정을 저장할 곳"></select></div>
+        <button type="button" class="fr srow" id="sysMove"><span class="st">챔의 달력 일정을 삼성 캘린더로 옮기기<small>옮기면 두 앱에서 같이 보고 고칠 수 있어요. 할 일은 그대로 남아요.</small></span><span class="sv">›</span></button>
+      </div>
+    </div>
     <p class="ver">챔의 달력</p>
   </div>
 </section>
@@ -378,6 +393,7 @@ body.locked { overflow: hidden; }
       <div class="fr">
         <input type="text" id="fTitle" placeholder="제목" enterkeyhint="done" autocomplete="off">
       </div>
+      <div class="fr evonly" id="calRow" hidden><span class="lb">캘린더</span><select id="fCal" aria-label="저장할 캘린더"></select></div>
       <div class="fr evonly colorrow"><span class="lb">색</span>
         <div class="dots" id="dots" role="group" aria-label="색">
           <button type="button" class="c-lav" data-c="lav" aria-label="라벤더"></button>
@@ -406,7 +422,7 @@ body.locked { overflow: hidden; }
       <div class="fr evonly"><span class="lb">장소</span><input type="text" id="fPlace" placeholder="장소 (선택)" enterkeyhint="done" autocomplete="off"></div>
       <div class="fr evonly"><span class="lb">반복</span>
         <select id="fRepeat">
-          <option value="">반복 안 함</option><option value="day">매일</option><option value="week">매주</option><option value="month">매월</option><option value="year">매년</option>
+          <option value="">반복 안 함</option><option value="keep" id="optKeep">삼성 캘린더의 반복 그대로</option><option value="day">매일</option><option value="week">매주</option><option value="month">매월</option><option value="year">매년</option>
         </select>
       </div>
       <div class="fr evonly memo"><span class="lb">메모</span><textarea id="fMemo" placeholder="메모 (선택)" rows="3"></textarea></div>
@@ -527,6 +543,7 @@ body.locked { overflow: hidden; }
         }
       });
     });
+    if (sysOn()) sysList.forEach(function (x) { if (x.e >= fromK && x.s <= toK) out.push({ v: sysV(x), s: x.s, e: x.e, base: null, sys: x }); });
     return out;
   }
   function spanOrder(a, b) {
@@ -578,6 +595,7 @@ body.locked { overflow: hidden; }
     var start = new Date(view); start.setDate(1 - view.getDay());
     var weeks = Math.ceil((view.getDay() + new Date(view.getFullYear(), view.getMonth() + 1, 0).getDate()) / 7);
     var gEnd = new Date(start); gEnd.setDate(start.getDate() + weeks * 7 - 1);
+    sysEnsure(key(start), key(gEnd));
     var all = occs(key(start), key(gEnd));
     var maxL = Math.max(1, Math.min(5, Math.floor((bigH - 34) / 17)));
     for (var w = 0; w < weeks; w++) {
@@ -620,11 +638,11 @@ body.locked { overflow: hidden; }
           var c = cells[i][L2];
           if (!c) { chips += '<span class="chip gap"></span>'; continue; }
           cnt++;
-          var cls = 'chip c-' + c.o.v.color + (c.o.s < k ? ' cl' : '') + (c.o.e > k ? ' cr' : '');
+          var cls = 'chip ' + colorCls(c.o.v.color) + (c.o.s < k ? ' cl' : '') + (c.o.e > k ? ' cr' : '');
           var txt = '';
           if (c.first) txt = '<b' + (c.n > 1 ? ' style="width:calc(' + c.n + '00% + ' + (c.n - 1) * 4 + 'px)"' : '') + '>' + esc(c.o.v.title) + '</b>';
           if (c.first && c.n > 1) cls += ' wide';
-          chips += '<span class="' + cls + '">' + txt + '</span>';
+          chips += '<span class="' + cls + '"' + colorSty(c.o.v.color) + '>' + txt + '</span>';
         }
         if (hidden[i]) chips += '<span class="more">+' + hidden[i] + '</span>';
         cnt += hidden[i];
@@ -644,7 +662,8 @@ body.locked { overflow: hidden; }
     var v = o.v, parts = [];
     if (o.e > o.s) parts.push(md(o.s) + (v.time ? ' ' + fmtTime(v.time) : '') + ' ~ ' + md(o.e) + (v.endTime ? ' ' + fmtTime(v.endTime) : ''));
     else parts.push(v.time ? fmtTime(v.time) + (v.endTime ? ' ~ ' + fmtTime(v.endTime) : '') : '하루 종일');
-    if (v.repeat) parts.push(REPEAT[v.repeat]);
+    if (v.repeat) parts.push(v.repeat === 'keep' ? '반복' : REPEAT[v.repeat]);
+    if (v.calName) parts.push(v.calName);
     if (v.place) parts.push(v.place);
     return parts.join(' · ');
   }
@@ -656,7 +675,7 @@ body.locked { overflow: hidden; }
     evs.forEach(function (o) {
       var li = document.createElement('li');
       var b = document.createElement('button'); b.type = 'button'; b.className = 'item';
-      b.innerHTML = '<span class="bar c-' + o.v.color + '"></span><span class="body"><span class="t">' + esc(o.v.title) + '</span><span class="s">' + esc(whenText(o, k)) + '</span>' +
+      b.innerHTML = '<span class="bar ' + colorCls(o.v.color) + '"' + colorSty(o.v.color) + '></span><span class="body"><span class="t">' + esc(o.v.title) + '</span><span class="s">' + esc(whenText(o, k)) + '</span>' +
         (o.v.memo ? '<span class="s">' + esc(o.v.memo.length > 80 ? o.v.memo.slice(0, 80) + '…' : o.v.memo) + '</span>' : '') + '</span>';
       b.setAttribute('aria-label', o.v.title + ', ' + whenText(o, k) + '. 눌러서 고치기');
       b.onclick = function () { openEditor(fromEvent(o)); };
@@ -853,7 +872,15 @@ body.locked { overflow: hidden; }
   function quickAdd(inp, pv, keepOpen) {
     var v = $(inp).value.trim();
     if (!v) { openEditor({}); return; }
-    var q = parseQuick(v), e = entry(q.k);
+    var q = parseQuick(v);
+    if (sysOn() && sysCfg.target !== 'local') {
+      Sys.save({ eventId: -1, calendarId: +sysCfg.target, title: q.title, allDay: !q.time, sK: q.k, eK: q.k, sT: q.time, eT: q.time ? addHour(q.time) : '', color: PAL.lav })
+        .then(function () { sysRefresh(); note(mdw(q.k) + '에 "' + q.title + '" 추가했어요. (삼성 캘린더)'); }, function (err) { note('삼성 캘린더에 추가하지 못했어요. ' + ((err && err.message) || '')); });
+      sel = kDate(q.k); view = new Date(sel.getFullYear(), sel.getMonth(), 1);
+      $(inp).value = ''; quickPreview(inp, pv); if (!keepOpen) $(inp).blur();
+      render(); return;
+    }
+    var e = entry(q.k);
     e.events.push({ id: uid(), title: q.title, time: q.time, color: 'lav' });
     store[q.k] = e; persist();
     sel = kDate(q.k); view = new Date(sel.getFullYear(), sel.getMonth(), 1);
@@ -880,13 +907,18 @@ body.locked { overflow: hidden; }
   function addHour(t) { var h = +t.slice(0, 2) + 1; return h > 23 ? '23:59' : pad(h) + t.slice(2); }
   function nextHour() { var h = new Date().getHours() + 1; return h > 23 ? '23:00' : pad(h) + ':00'; }
   function fromEvent(o) {
+    if (o.sys) {
+      var x = o.sys;
+      return { kind: 'event', id: 's' + x.eventId, base: null, sys: { eventId: x.eventId, calId: x.calId, begin: x.begin, dtstart: x.dtstart, rrule: x.rrule, color: x.color },
+        title: x.title, color: palName(x.color), allDay: x.allDay, sK: x.s, eK: x.e, sT: x.time, eT: x.endTime, place: x.place, repeat: ruleToRepeat(x.rrule), memo: x.memo, target: String(x.calId) };
+    }
     var v = o.v;
     return { kind: 'event', id: v.id, base: o.base, title: v.title, color: v.color, allDay: !v.time,
-      sK: o.base, eK: v.end || o.base, sT: v.time || '', eT: v.endTime || '', place: v.place || '', repeat: v.repeat || '', memo: v.memo || '' };
+      sK: o.base, eK: v.end || o.base, sT: v.time || '', eT: v.endTime || '', place: v.place || '', repeat: v.repeat || '', memo: v.memo || '', target: 'local' };
   }
   function openEditor(o) {
     var k = key(sel);
-    ed = { kind: 'event', id: null, base: null, title: '', color: 'lav', allDay: true, sK: k, eK: k, sT: '', eT: '', place: '', repeat: '', memo: '', tK: k, done: false };
+    ed = { kind: 'event', id: null, base: null, title: '', color: 'lav', allDay: true, sK: k, eK: k, sT: '', eT: '', place: '', repeat: '', memo: '', tK: k, done: false, target: sysOn() ? sysCfg.target : 'local' };
     Object.keys(o || {}).forEach(function (x) { ed[x] = o[x]; });
     miniFor = null;
     $('fTitle').classList.remove('need');
@@ -911,6 +943,7 @@ body.locked { overflow: hidden; }
     if (!ed) return;
     ed.title = $('fTitle').value; ed.place = $('fPlace').value; ed.memo = $('fMemo').value; ed.repeat = $('fRepeat').value;
     ed.allDay = $('fAll').checked; ed.sT = $('sTime').value; ed.eT = $('eTime').value;
+    if (!$('calRow').hidden && !$('fCal').disabled) ed.target = $('fCal').value;
   }
   function snap() { readEditor(); return JSON.stringify(ed); }
   function fillEditor() {
@@ -924,7 +957,20 @@ body.locked { overflow: hidden; }
     $('range').classList.toggle('allday', ed.allDay);
     $('sDate').textContent = mdw(ed.sK); $('eDate').textContent = mdw(ed.eK); $('tDate').textContent = mdw(ed.tK);
     $('sTime').value = ed.sT; $('eTime').value = ed.eT;
+    $('optKeep').hidden = ed.repeat !== 'keep';
     $('fPlace').value = ed.place; $('fRepeat').value = ed.repeat; $('fMemo').value = ed.memo;
+    // 저장할 캘린더: 새 일정만 고를 수 있어요
+    var cr = $('calRow'), fc = $('fCal');
+    cr.hidden = !sysOn();
+    if (sysOn()) {
+      var opts = [];
+      if (ed.sys) { var cc = calById(ed.sys.calId); opts.push([String(ed.sys.calId), cc ? cc.name : '삼성 캘린더']); }
+      else if (ed.id) opts.push(['local', '챔의 달력']);
+      else { opts.push(['local', '챔의 달력']); sysCals.forEach(function (c) { if (c.writable && sysCfg.show.indexOf(c.id) >= 0) opts.push([String(c.id), c.name + (c.account && c.account !== c.name ? ' · ' + c.account : '')]); }); }
+      fc.innerHTML = opts.map(function (o) { return '<option value="' + esc(o[0]) + '">' + esc(o[1]) + '</option>'; }).join('');
+      fc.value = opts.some(function (o) { return o[0] === ed.target; }) ? ed.target : opts[0][0];
+      fc.disabled = !!ed.id;
+    }
     $('fDelete').hidden = !ed.id;
     $('sDate').classList.toggle('on', miniFor === 's'); $('eDate').classList.toggle('on', miniFor === 'e'); $('tDate').classList.toggle('on', miniFor === 't');
     renderMini();
@@ -996,6 +1042,7 @@ body.locked { overflow: hidden; }
     var title = ed.title.trim();
     if (!title) { $('fTitle').classList.add('need'); $('fTitle').placeholder = ed.kind === 'todo' ? '할 일을 적어 주세요' : '제목을 적어 주세요'; $('fTitle').focus(); return; }
     var go2;
+    if (ed.kind === 'event' && (ed.sys || (sysOn() && ed.target && ed.target !== 'local'))) { sysSaveEvent(title); return; }
     if (ed.kind === 'event') {
       var obj = { id: ed.id || uid(), title: title, time: ed.allDay ? '' : (ed.sT || ''), color: ed.color };
       if (!ed.allDay && ed.eT) obj.endTime = ed.eT;
@@ -1023,6 +1070,11 @@ body.locked { overflow: hidden; }
   function deleteItem() {
     ask(ed.kind === 'todo' ? '이 할 일을 지울까요?' : (ed.repeat ? '반복되는 일정 전체를 지울까요?' : '이 일정을 지울까요?'), ['취소', '지우기']).then(function (i) {
       if (i !== 1) return;
+      if (ed.sys) {
+        Sys.remove({ eventId: ed.sys.eventId }).then(function () { closeEditor(); sysRefresh(); note('삼성 캘린더에서도 지웠어요.'); },
+          function (err) { note('지우지 못했어요. ' + ((err && err.message) || '')); });
+        return;
+      }
       var en = entry(ed.base);
       if (ed.kind === 'todo') en.todos = en.todos.filter(function (x) { return x.id !== ed.id; });
       else en.events = en.events.filter(function (x) { return x.id !== ed.id; });
@@ -1096,6 +1148,132 @@ body.locked { overflow: hidden; }
     try { history.pushState({ ed: 1 }, ''); } catch (e) {}
     tryClose();
   });
+
+  // ───── 삼성 캘린더(폰 공용 달력) 연동 ─────
+  // 삼성 일정은 챔의 달력에 따로 복사하지 않고 매번 폰 달력에서 읽어요. 그래서 어느 쪽에서 고쳐도 같아요.
+  var Sys = native && Cap.Plugins && Cap.Plugins.ChamCal ? Cap.Plugins.ChamCal : null;
+  var sysCfg = { on: false, show: [], target: 'local' }, sysCals = [], sysList = [], sysFrom = '', sysTo = '', sysBusy = false;
+  var PAL = { lav: '#9D8FBD', peach: '#C99484', mint: '#86AE9B', sky: '#8199B8', rose: '#C48A9F', butter: '#C4AB6B', teal: '#6FA5A3', plum: '#A07AA6', sand: '#B39B85', slate: '#8A8F9C' };
+  var RR = { day: 'FREQ=DAILY', week: 'FREQ=WEEKLY', month: 'FREQ=MONTHLY', year: 'FREQ=YEARLY' };
+  function sysOn() { return !!(Sys && sysCfg.on); }
+  function colorCls(c) { return COLORS.indexOf(c) >= 0 ? 'c-' + c : ''; }
+  function colorSty(c) { return /^#[0-9a-f]{6}$/i.test(c || '') ? ' style="background:' + c + '"' : ''; }
+  function palName(hex) {
+    if (!hex) return 'lav';
+    for (var k in PAL) if (PAL[k].toLowerCase() === hex.toLowerCase()) return k;
+    return hex;
+  }
+  function ruleToRepeat(r) {
+    if (!r) return '';
+    var m = /FREQ=(DAILY|WEEKLY|MONTHLY|YEARLY)/.exec(r);
+    if (!m) return 'keep';
+    var rest = r.split(';').filter(function (p) { return p && !/^(FREQ=|WKST=|INTERVAL=1$|BYDAY=[A-Z]{2}$|BYMONTHDAY=\d+$|BYMONTH=\d+$)/.test(p); });
+    return rest.length ? 'keep' : { DAILY: 'day', WEEKLY: 'week', MONTHLY: 'month', YEARLY: 'year' }[m[1]];
+  }
+  function calById(id) { for (var i = 0; i < sysCals.length; i++) if (sysCals[i].id === id) return sysCals[i]; return null; }
+  function sysV(x) {
+    if (!x._v) {
+      var c = calById(x.calId);
+      x._v = { id: 's' + x.eventId, title: x.title, time: x.time, endTime: x.endTime, color: palName(x.color), place: x.place, memo: x.memo,
+        repeat: ruleToRepeat(x.rrule), calName: c ? c.name : '' };
+    }
+    return x._v;
+  }
+  function sysEnsure(fromK, toK) {
+    if (!sysOn() || sysBusy) return;
+    if (sysFrom && fromK >= sysFrom && toK <= sysTo) return;
+    sysBusy = true;
+    var f = kd(dn(fromK) - 31), t = kd(dn(toK) + 62);
+    Sys.instances({ from: f, to: t, calendars: sysCfg.show }).then(function (r) {
+      sysList = (r && r.events) || []; sysFrom = f; sysTo = t; sysBusy = false; render();
+    }, function () { sysBusy = false; });
+  }
+  function sysRefresh() { sysFrom = ''; sysTo = ''; render(); }
+  function sysStore() { setItem(KEY + '-sys', JSON.stringify(sysCfg)); }
+  function sysSaveEvent(title) {
+    var hex = PAL[ed.color] || '';
+    if (ed.sys && ed.sys.color && palName(ed.sys.color) === ed.color) hex = '';   // 색을 안 바꿨으면 그대로
+    var calId = ed.sys ? ed.sys.calId : +ed.target;
+    var sT = ed.allDay ? '' : (ed.sT || '09:00');
+    var payload = { eventId: ed.sys ? ed.sys.eventId : -1, calendarId: calId, calId: calId, title: title, allDay: ed.allDay,
+      sK: ed.sK, eK: ed.eK, sT: sT, eT: ed.allDay ? '' : (ed.eT || addHour(sT)), place: ed.place.trim(), memo: ed.memo,
+      rrule: ed.repeat === 'keep' && ed.sys ? ed.sys.rrule : (RR[ed.repeat] || ''), color: hex,
+      wasRecurring: !!(ed.sys && ed.sys.rrule), origBegin: ed.sys ? ed.sys.begin : 0, origDtstart: ed.sys ? ed.sys.dtstart : 0 };
+    $('fSave').disabled = true;
+    Sys.save(payload).then(function () {
+      $('fSave').disabled = false;
+      sel = kDate(ed.sK); view = new Date(sel.getFullYear(), sel.getMonth(), 1);
+      closeEditor(); sysRefresh(); note('삼성 캘린더에 저장했어요.');
+    }, function (err) { $('fSave').disabled = false; note('삼성 캘린더에 저장하지 못했어요. ' + ((err && err.message) || '')); });
+  }
+  function pickTarget() {
+    var w = sysCals.filter(function (c) { return c.writable; }), by = function (re) { return w.filter(function (c) { return re.test(c.type); })[0]; };
+    var c = by(/osp|samsung/i) || by(/^LOCAL$/i) || by(/google/i) || w[0];
+    return c ? String(c.id) : 'local';
+  }
+  function renderSys() {
+    if (!Sys) { $('sysOn').disabled = true; $('sysSub').textContent = '폰 앱에서만 쓸 수 있어요'; return; }
+    $('sysOn').checked = sysOn(); $('sysMore').hidden = !sysOn();
+    if (!sysOn()) return;
+    $('sysCals').innerHTML = sysCals.map(function (c) {
+      return '<label class="fr calrow"><span class="cdot" style="background:' + esc(c.color) + '"></span><span class="cn">' + esc(c.name || '(이름 없음)') +
+        (c.account && c.account !== c.name ? '<small>' + esc(c.account) + '</small>' : '') + '</span>' +
+        '<input type="checkbox" class="toggle" data-id="' + c.id + '"' + (sysCfg.show.indexOf(c.id) >= 0 ? ' checked' : '') + ' aria-label="' + esc(c.name) + ' 보이기"></label>';
+    }).join('') || '<p class="empty">폰에 캘린더가 없어요.</p>';
+    var opts = [['local', '챔의 달력']].concat(sysCals.filter(function (c) { return c.writable; }).map(function (c) { return [String(c.id), c.name + (c.account && c.account !== c.name ? ' · ' + c.account : '')]; }));
+    $('sysTarget').innerHTML = opts.map(function (o) { return '<option value="' + esc(o[0]) + '">' + esc(o[1]) + '</option>'; }).join('');
+    $('sysTarget').value = sysCfg.target;
+  }
+  function sysLoadCals() {
+    return Sys.calendars().then(function (r) {
+      sysCals = (r && r.calendars) || [];
+      sysList.forEach(function (x) { x._v = null; });
+      renderSys();
+    });
+  }
+  $('sysOn').addEventListener('change', function () {
+    var box = this;
+    if (!box.checked) { sysCfg.on = false; sysStore(); sysList = []; renderSys(); render(); note('삼성 캘린더 연동을 껐어요.'); return; }
+    Sys.request().then(function (r) {
+      if (!r || !r.granted) {
+        box.checked = false;
+        note('캘린더 권한이 없어서 연동할 수 없어요. 폰 설정 → 애플리케이션 → 챔의 달력 → 권한에서 캘린더를 허용해 주세요.');
+        return;
+      }
+      sysCfg.on = true;
+      sysLoadCals().then(function () {
+        if (!sysCfg.show.length) sysCfg.show = sysCals.filter(function (c) { return c.visible; }).map(function (c) { return c.id; });
+        if (sysCfg.target === 'local' || !calById(+sysCfg.target)) sysCfg.target = pickTarget();
+        sysStore(); renderSys(); sysRefresh(); note('삼성 캘린더와 연결했어요.');
+      });
+    }, function () { box.checked = false; note('캘린더 권한을 받지 못했어요.'); });
+  });
+  $('sysCals').addEventListener('change', function (ev) {
+    var id = +ev.target.dataset.id; if (!id && id !== 0) return;
+    sysCfg.show = sysCfg.show.filter(function (x) { return x !== id; });
+    if (ev.target.checked) sysCfg.show.push(id);
+    sysStore(); sysRefresh();
+  });
+  $('sysTarget').addEventListener('change', function () { sysCfg.target = this.value; sysStore(); });
+  $('sysMove').onclick = function () {
+    if (!sysOn() || sysCfg.target === 'local') { note('먼저 "새 일정" 저장할 곳을 삼성 캘린더 쪽으로 골라 주세요.'); return; }
+    var list = [];
+    Object.keys(store).forEach(function (k) { store[k].events.forEach(function (v) { list.push({ k: k, v: v }); }); });
+    if (!list.length) { note('옮길 일정이 없어요.'); return; }
+    var c = calById(+sysCfg.target);
+    ask('챔의 달력 일정 ' + list.length + '개를 "' + (c ? c.name : '삼성 캘린더') + '"(으)로 옮길까요? 옮긴 뒤에는 삼성 캘린더에서도 보이고 고칠 수 있어요.', ['취소', '옮기기']).then(function (i) {
+      if (i !== 1) return;
+      var done = 0, fail = 0;
+      (function next() {
+        if (!list.length) { persist(); sysRefresh(); note(done + '개를 옮겼어요.' + (fail ? ' ' + fail + '개는 옮기지 못했어요.' : '')); return; }
+        var it = list.shift(), v = it.v;
+        Sys.save({ eventId: -1, calendarId: +sysCfg.target, title: v.title, allDay: !v.time, sK: it.k, eK: v.end || it.k, sT: v.time, eT: v.time ? (v.endTime || addHour(v.time)) : '',
+          place: v.place || '', memo: v.memo || '', rrule: RR[v.repeat] || '', color: PAL[v.color] || '' }).then(function () {
+          var en = entry(it.k); en.events = en.events.filter(function (x) { return x.id !== v.id; }); store[it.k] = en; clean(it.k); done++; next();
+        }, function () { fail++; next(); });
+      })();
+    });
+  };
 
   // ───── 설정 창 ─────
   var setOpen = false, setSheet = $('setSheet'), sscrim = $('sscrim');
@@ -1222,6 +1400,7 @@ body.locked { overflow: hidden; }
   // 날짜가 바뀐 뒤 다시 열면 오늘 표시를 고쳐요
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState !== 'visible') return;
+    if (sysOn()) sysLoadCals().then(sysRefresh);   // 삼성 캘린더에서 바꾼 것 다시 읽기
     if (key(new Date()) !== key(now)) { now = new Date(); renderGrid(); }
     checkOpen();
   });
@@ -1244,6 +1423,15 @@ body.locked { overflow: hidden; }
     applyTheme(v[1]);
     render();
     loaded = true; checkOpen();
+    getItem(KEY + '-sys').then(function (raw) {
+      try { var c = JSON.parse(raw || '{}'); if (c && typeof c === 'object') { sysCfg.on = !!c.on; sysCfg.show = Array.isArray(c.show) ? c.show.map(Number) : []; sysCfg.target = c.target ? String(c.target) : 'local'; } } catch (e) {}
+      if (!Sys) { sysCfg.on = false; renderSys(); return; }
+      if (!sysCfg.on) { renderSys(); return; }
+      Sys.status().then(function (r) {
+        if (!r || !r.granted) { sysCfg.on = false; renderSys(); return; }
+        sysLoadCals().then(sysRefresh);
+      });
+    });
   });
   render();
 })();

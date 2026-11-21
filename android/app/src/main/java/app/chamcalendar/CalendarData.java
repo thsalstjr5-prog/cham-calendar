@@ -22,6 +22,7 @@ final class CalendarData {
     static final class Event {
         String title; String time; String color;
         String when; // 기간 일정의 중간·끝 날에 보여줄 시간 글씨
+        int colorInt; // 삼성 캘린더 일정 색 (0이면 color 이름을 써요)
     }
 
     static final class Day {
@@ -109,8 +110,25 @@ final class CalendarData {
         }
     }
 
+    // 위젯이 그릴 범위의 삼성 캘린더 일정 (위젯마다 그리기 전에 loadSys로 채워요)
+    private static List<SystemCal.Ev> sys = new ArrayList<>();
+    static void loadSys(Context ctx, String fromKey, String toKey) {
+        java.util.Set<Long> ids = SystemCal.shownCalendars(ctx);
+        sys = ids == null ? new ArrayList<>() : SystemCal.query(ctx, fromKey, toKey, ids);
+    }
+
     static Day day(JSONObject all, String k) {
         Day d = new Day();
+        for (SystemCal.Ev x : sys) {
+            if (x.s.compareTo(k) > 0 || x.e.compareTo(k) < 0) continue;
+            Event ev = new Event();
+            ev.title = x.title;
+            ev.color = "lav";
+            ev.colorInt = x.color;
+            if (x.s.equals(k)) ev.time = x.time;
+            else { ev.time = ""; ev.when = k.equals(x.e) && !x.endTime.isEmpty() ? "~ " + fmtTime(x.endTime) : "하루 종일"; }
+            d.events.add(ev);
+        }
         long n = dn(k);
         // 반복·기간 일정까지 펼쳐서 오늘(k)에 걸친 것을 모두 모아요
         java.util.Iterator<String> it = all.keys();

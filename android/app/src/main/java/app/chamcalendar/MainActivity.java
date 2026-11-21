@@ -17,6 +17,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         takeWidgetAction(getIntent());
+        registerPlugin(ChamCalPlugin.class);   // 삼성 캘린더(폰 공용 달력) 연동
         super.onCreate(savedInstanceState);
         // 뒤로가기: 열린 창(팝업·추가 창)이 있으면 그것만 닫고, 첫 화면이면 앱을 끄지 않고 홈으로 내려가요
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {

@@ -21,6 +21,9 @@ public class MonthWidget extends AppWidgetProvider {
 
     static void draw(Context ctx, AppWidgetManager m, int[] ids) {
         JSONObject all = CalendarData.load(ctx);
+        Calendar f = Calendar.getInstance(); f.set(Calendar.DAY_OF_MONTH, 1);
+        Calendar t = Calendar.getInstance(); t.set(Calendar.DAY_OF_MONTH, t.getActualMaximum(Calendar.DAY_OF_MONTH));
+        CalendarData.loadSys(ctx, CalendarData.key(f), CalendarData.key(t));
         for (int id : ids) m.updateAppWidget(id, build(ctx, all, id));
     }
 
@@ -63,6 +66,7 @@ public class MonthWidget extends AppWidgetProvider {
                     CalendarData.Day d = CalendarData.day(all, k);
                     if (!d.events.isEmpty()) {
                         cell.setImageViewResource(R.id.c_dot, CalendarData.dotRes(d.events.get(0).color));
+                        if (d.events.get(0).colorInt != 0) cell.setInt(R.id.c_dot, "setColorFilter", d.events.get(0).colorInt);
                         cell.setViewVisibility(R.id.c_dot, View.VISIBLE);
                     } else if (!d.openTodos.isEmpty()) {
                         cell.setImageViewResource(R.id.c_dot, R.drawable.w_dot_peach);

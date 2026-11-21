@@ -34,6 +34,9 @@ public class DuoWidget extends AppWidgetProvider {
 
     static void draw(Context ctx, AppWidgetManager m, int[] ids) {
         JSONObject all = CalendarData.load(ctx);
+        Calendar f = Calendar.getInstance(), t = Calendar.getInstance();
+        t.add(Calendar.DAY_OF_MONTH, DAYS - 1);
+        CalendarData.loadSys(ctx, CalendarData.key(f), CalendarData.key(t));
         for (int id : ids) {
             Bundle o = m.getAppWidgetOptions(id);
             int h = o == null ? 0 : o.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 0);
@@ -125,6 +128,7 @@ public class DuoWidget extends AppWidgetProvider {
             if (n >= show) break;
             RemoteViews r = new RemoteViews(pkg, R.layout.w_drow);
             r.setImageViewResource(R.id.r_bar, barRes(e.color));
+            if (e.colorInt != 0) r.setInt(R.id.r_bar, "setColorFilter", e.colorInt);
             r.setTextViewText(R.id.r_text, e.title);
             String t = e.when != null ? e.when : e.time.isEmpty() ? "" : CalendarData.fmtTime(e.time);
             r.setTextViewText(R.id.r_time, t.equals("하루 종일") ? "" : t);
