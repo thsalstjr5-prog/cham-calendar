@@ -519,6 +519,28 @@ input::placeholder { color: var(--muted); opacity: .8; }
     if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {});
   }
 
+  // 자판이 올라오면 입력칸과 그 위 목록이 같이 보이게 스크롤
+  var focusedBox = null;
+  function showBox() {
+    if (!focusedBox) return;
+    var vv = window.visualViewport, vh = vv ? vv.height : window.innerHeight;
+    var r = focusedBox.getBoundingClientRect(), pad = 12;
+    if (r.height + pad * 2 > vh) { // 목록이 길면 입력칸이 자판 바로 위에 오게
+      window.scrollBy(0, r.bottom - vh + pad);
+    } else if (r.bottom > vh - pad || r.top < pad) {
+      window.scrollBy(0, r.bottom - vh + pad);
+    }
+  }
+  document.querySelector('.panel').addEventListener('focusin', function (e) {
+    if (e.target.tagName !== 'INPUT') return;
+    focusedBox = e.target.closest('.panel > div');
+    setTimeout(showBox, 350);
+  });
+  document.querySelector('.panel').addEventListener('focusout', function () {
+    setTimeout(function () { if (!document.activeElement || document.activeElement.tagName !== 'INPUT') focusedBox = null; }, 0);
+  });
+  (window.visualViewport || window).addEventListener('resize', function () { setTimeout(showBox, 60); });
+
   setColor('lav');
   Promise.all([getItem(KEY), getItem(KEY + '-theme')]).then(function (v) {
     var raw = {};
