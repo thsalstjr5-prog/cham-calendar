@@ -119,7 +119,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--lav); outli
 .chip.gap { visibility: hidden; }
 /* 긴 제목: 두 줄로 (큰 달력에서). 작은 달력에서는 가는 줄 그대로 */
 .chip.ml { height: calc(var(--chip-h, 15px) + var(--ext, 0px) * var(--chip-k, 1)); }
-.chip.pad { margin-bottom: calc(var(--pad, 0px) * var(--chip-k, 1)); }
 .chip.ml b, #chipProbe { white-space: normal; word-break: break-all; line-height: 1.3em; padding-top: 1px; overflow: hidden; }
 .chip.ml b { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; line-clamp: 4; }
 #chipProbe { position: absolute; left: -9999px; top: 0; visibility: hidden; font-size: 9.5px; font-weight: 600; padding: 1px 0 0; display: block; }
@@ -626,11 +625,12 @@ body.locked { overflow: hidden; }
     for (var w = 0; w < weeks; w++) {
       var dk = [], dd = [];
       for (var j = 0; j < 7; j++) { var d0 = new Date(start); d0.setDate(start.getDate() + w * 7 + j); dd.push(d0); dk.push(key(d0)); }
-      // 이번 주에 걸친 일정마다 줄(lane)을 정해서 기간 막대가 같은 높이로 이어지게
+      // 여러 날 막대만 줄(lane)을 맞추고, 하루짜리 일정은 칸마다 빈자리부터 채워서 빈칸이 안 생기게
       var wk = all.filter(function (o) { return o.s <= dk[6] && o.e >= dk[0]; }).sort(spanOrder);
       var lanes = [], cells = [[], [], [], [], [], [], []], hidden = [0, 0, 0, 0, 0, 0, 0];
-      var placed = [], lines = [];
+      var slots = [[], [], [], [], [], [], []];
       wk.forEach(function (o) {
+        if (o.e <= o.s) return;
         var a = 0, b = 6;
         while (dk[a] < o.s) a++;
         while (dk[b] > o.e) b--;
@@ -641,24 +641,25 @@ body.locked { overflow: hidden; }
           for (var x = a; x <= b; x++) if (lanes[L][x]) { free = false; break; }
           if (free) break;
         }
-        for (var y = a; y <= b; y++) lanes[L][y] = true;
-        placed.push({ o: o, a: a, b: b, L: L });
-        // 하루짜리 일정 제목이 칸보다 길면 그 일정만 키우고, 같은 줄(lane)은 그만큼 자리만 비워 둬요
-        var ext = a === b ? titleExt(o.v.title) : 0;
-        placed[placed.length - 1].ext = ext;
-        lines[L] = Math.max(lines[L] || 0, ext);
+        for (var y = a; y <= b; y++) { lanes[L][y] = true; slots[y][L] = { o: o, first: y === a, n: b - a + 1, ext: 0 }; }
       });
-      // 칸 높이 안에 들어가는 줄 수 (긴 제목 줄은 자리를 더 차지해요)
-      var room = bigH - 34, vis = 0;
-      var laneH = function (x) { return 17 + (x || 0); };
-      while (vis < lines.length && room >= laneH(lines[vis])) { room -= laneH(lines[vis]); vis++; }
-      vis = Math.max(1, Math.min(vis, 6));
-      placed.forEach(function (pl) {
-        for (var y = pl.a; y <= pl.b; y++) {
-          if (pl.L < vis) cells[y][pl.L] = { o: pl.o, first: y === pl.a, n: pl.b - pl.a + 1, ext: pl.ext || 0, pad: (lines[pl.L] || 0) - (pl.ext || 0) };
-          else hidden[y]++;
+      wk.forEach(function (o) {
+        if (o.e > o.s) return;
+        var y = 0; while (dk[y] < o.s) y++;
+        var c = { o: o, first: true, n: 1, ext: titleExt(o.v.title) }, s = slots[y], put = false;
+        if (!c.ext) for (var z = 0; z < s.length; z++) if (!s[z]) { s[z] = c; put = true; break; }
+        if (!put) s[s.length] = c;
+      });
+      // 칸 높이 안에 들어가는 만큼만 보여주고 나머지는 +N (막대 줄 위치는 칸마다 같아요)
+      var room = bigH - 34;
+      for (var y2 = 0; y2 < 7; y2++) {
+        var s2 = slots[y2], h = 0;
+        for (var z2 = 0; z2 < s2.length; z2++) {
+          var hh = 17 + (s2[z2] ? s2[z2].ext : 0);
+          if (z2 > 0 && (h + hh > room || z2 >= 6)) { for (var q = z2; q < s2.length; q++) if (s2[q]) hidden[y2]++; break; }
+          h += hh; cells[y2][z2] = s2[z2] || null;
         }
-      });
+      }
       for (var i = 0; i < 7; i++) {
         var d = dd[i], k = dk[i], e = store[k];
         var b2 = document.createElement('button');
@@ -674,13 +675,13 @@ body.locked { overflow: hidden; }
         if (e && e.todos.length) dot = e.todos.every(function (t) { return t.done; }) ? '<i class="d"></i>' : '<i class="t"></i>';
         for (var L2 = 0; L2 < cells[i].length; L2++) {
           var c = cells[i][L2];
-          if (!c) { chips += '<span class="chip gap' + (lines[L2] ? ' ml" style="--ext:' + lines[L2] + 'px' : '') + '"></span>'; continue; }
+          if (!c) { chips += '<span class="chip gap"></span>'; continue; }
           cnt++;
-          var cls = 'chip ' + colorCls(c.o.v.color) + (c.o.s < k ? ' cl' : '') + (c.o.e > k ? ' cr' : '') + (c.ext ? ' ml' : '') + (c.pad ? ' pad' : '');
+          var cls = 'chip ' + colorCls(c.o.v.color) + (c.o.s < k ? ' cl' : '') + (c.o.e > k ? ' cr' : '') + (c.ext ? ' ml' : '');
           var txt = '';
           if (c.first) txt = '<b' + (c.n > 1 ? ' style="width:calc(' + c.n + '00% + ' + (c.n - 1) * 4 + 'px)"' : '') + '>' + esc(c.o.v.title) + '</b>';
           if (c.first && c.n > 1) cls += ' wide';
-          var vs = (c.ext ? '--ext:' + c.ext + 'px;' : '') + (c.pad ? '--pad:' + c.pad + 'px;' : '');
+          var vs = c.ext ? '--ext:' + c.ext + 'px;' : '';
           var st = colorSty(c.o.v.color);
           if (vs) st = st ? st.replace('style="', 'style="' + vs) : ' style="' + vs + '"';
           chips += '<span class="' + cls + '"' + st + '>' + txt + '</span>';

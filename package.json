@@ -1,6 +1,6 @@
 {
   "name": "cham-calendar",
-  "version": "2.0.8",
+  "version": "2.0.9",
   "private": true,
   "description": "챔의 달력 - 차분한 파스텔톤 일정·할 일 달력",
   "scripts": {
