@@ -156,6 +156,13 @@ final class CalendarData {
         return d;
     }
 
+    /** 위젯 배경 진하기 (앱에서 0~100%로 정해요). 0이면 완전 투명. */
+    static int bgAlpha(Context ctx) {
+        String v = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY + "-wbg", "100");
+        try { return Math.max(0, Math.min(255, Math.round(Integer.parseInt(v.trim()) * 255 / 100f))); }
+        catch (Exception e) { return 255; }
+    }
+
     static String fmtTime(String t) {
         if (t == null || !t.matches("\\d{2}:\\d{2}")) return "하루 종일";
         int h = Integer.parseInt(t.substring(0, 2));
