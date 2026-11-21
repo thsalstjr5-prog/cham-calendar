@@ -124,6 +124,28 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--lav); outli
 #chipProbe { position: absolute; left: -9999px; top: 0; visibility: hidden; font-size: 9.5px; font-weight: 600; padding: 1px 0 0; display: block; }
 .chip.wide { overflow: visible; }
 .more { font-size: 10px; line-height: 12px; color: var(--muted); text-align: center; }
+/* 1년 보기 */
+.month h1, .month span { cursor: pointer; }
+.month span::after { content: " ▾"; font-size: 11px; }
+.yv { position: fixed; inset: 0; z-index: 60; background: var(--bg); display: flex; flex-direction: column;
+  padding: env(safe-area-inset-top) 0 0; opacity: 0; transform: scale(.97); transition: opacity .22s ease, transform .22s ease; }
+.yv.on { opacity: 1; transform: none; }
+.yvhead { display: flex; align-items: center; gap: 8px; padding: 14px 16px 8px; }
+.yvhead h2 { flex: 1; margin: 0; font-family: var(--hand); font-weight: 400; font-size: 32px; color: var(--lav); }
+.yvhead button { border: 0; border-radius: 999px; background: var(--surface-2); color: var(--fg); font: inherit; font-size: 15px; height: 40px; padding: 0 16px; }
+.yvbody { flex: 1; overflow-y: auto; padding: 0 10px 40px; -webkit-overflow-scrolling: touch; }
+.yvyear h3 { margin: 18px 8px 6px; font-size: 20px; font-weight: 700; color: var(--fg); }
+.yvgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px 8px; align-items: start; }
+.mm { display: flex; flex-direction: column; justify-content: flex-start; align-self: stretch; border: 0; background: none; padding: 6px 2px; border-radius: 12px; color: var(--fg); font: inherit; text-align: center; min-width: 0; }
+.mm.cur { background: var(--surface); }
+.mm b { display: block; font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+.mm.now b { display: inline-block; background: var(--lav); color: var(--on-accent); border-radius: 6px; padding: 0 6px; }
+.mmw, .mmd { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; }
+.mmw i { font-style: normal; font-size: 8px; color: var(--muted); line-height: 12px; }
+.mmd i { font-style: normal; font-size: 9.5px; line-height: 15px; height: 15px; border-radius: 3px; font-variant-numeric: tabular-nums; }
+.mmd i.su, .mmd i.ho { color: var(--peach); } .mmd i.sa { color: var(--sky); }
+.mmd i.ev { color: var(--on-accent); font-weight: 600; }
+.mmd i.td { box-shadow: inset 0 0 0 1.5px var(--fg); font-weight: 700; }
 .c-lav { background: var(--lav); } .c-peach { background: var(--peach); } .c-mint { background: var(--mint); } .c-sky { background: var(--sky); }
 .c-rose { background: var(--rose); } .c-butter { background: var(--butter); } .c-teal { background: var(--teal); } .c-plum { background: var(--plum); } .c-sand { background: var(--sand); } .c-slate { background: var(--slate); }
 .legend { display: flex; gap: 14px; justify-content: center; font-size: 12px; color: var(--muted); padding-top: 8px; }
@@ -312,6 +334,11 @@ body.locked { overflow: hidden; }
       <button id="openSet" aria-label="설정"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
     </div>
   </header>
+
+  <div class="yv" id="yearView" hidden role="dialog" aria-label="1년 보기">
+    <div class="yvhead"><h2 id="yvTitle"></h2><button id="yvToday">오늘</button><button id="yvClose">닫기</button></div>
+    <div class="yvbody" id="yvBody"></div>
+  </div>
 
   <section class="cal" id="cal" aria-label="달력. 옆으로 밀면 달이 바뀌고, 위아래로 밀면 크기가 바뀌어요">
     <div class="week"><div class="sun">일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div class="sat">토</div></div>
@@ -1205,7 +1232,7 @@ body.locked { overflow: hidden; }
   // 폰의 뒤로가기: 확인 창 → 추가 창 순서로 닫혀요
   window.addEventListener('popstate', function () {
     if (skipPop) { skipPop = false; return; }   // 창이 스스로 닫히면서 생긴 뒤로가기
-    if (!edOpen) { if (dsOpen) closeDay(true); else if (setOpen) closeSet(true); return; }
+    if (!edOpen) { if (dsOpen) closeDay(true); else if (setOpen) closeSet(true); else if (yvOpen) closeYear(true); return; }
     if (askDone) { closeAsk(0); try { history.pushState({ ed: 1 }, ''); } catch (e) {} return; }
     if (snap() === edSnap) { closeEditor(true); return; }
     try { history.pushState({ ed: 1 }, ''); } catch (e) {}
@@ -1380,6 +1407,93 @@ body.locked { overflow: hidden; }
   })();
 
   // 폰의 뒤로가기 (앱): 열린 것부터 하나씩 닫아요. 닫을 게 없으면 false → 앱은 홈으로 내려가요 (꺼지지 않아요)
+  // ───── 1년 보기 (삼성 캘린더 '년' 화면처럼) ─────
+  var yvOpen = false, yvSys = {}, yvLo = 0, yvHi = 0;
+  function yvEvents(Y) {
+    var f = Y + '-01-01', t = Y + '-12-31', m = {};
+    var list = occs(f, t).filter(function (o) { return !o.sys; });
+    if (sysOn() && yvSys[Y]) yvSys[Y].forEach(function (x) { if (x.e >= f && x.s <= t) list.push({ v: sysV(x), s: x.s, e: x.e, sys: x }); });
+    list.sort(spanOrder).forEach(function (o) {
+      for (var n = Math.max(dn(o.s), dn(f)), e = Math.min(dn(o.e), dn(t)); n <= e; n++) { var k = kd(n); if (!m[k]) m[k] = o.v.color; }
+    });
+    return m;
+  }
+  function yvYear(Y) {
+    var ev = yvEvents(Y), today = key(new Date()), h = '<div class="yvyear" data-y="' + Y + '"><h3>' + Y + '년</h3><div class="yvgrid">';
+    for (var M = 0; M < 12; M++) {
+      var first = new Date(Y, M, 1), cnt = new Date(Y, M + 1, 0).getDate();
+      var cls = 'mm' + (Y === view.getFullYear() && M === view.getMonth() ? ' cur' : '') + (Y === now.getFullYear() && M === now.getMonth() ? ' now' : '');
+      h += '<button class="' + cls + '" data-y="' + Y + '" data-m="' + M + '"><b>' + (M + 1) + '월</b><div class="mmw"><i>일</i><i>월</i><i>화</i><i>수</i><i>목</i><i>금</i><i>토</i></div><div class="mmd">';
+      for (var b = 0; b < first.getDay(); b++) h += '<i></i>';
+      for (var d = 1; d <= cnt; d++) {
+        var k = Y + '-' + String(M + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0'), wd = (first.getDay() + d - 1) % 7, c = ev[k];
+        var ic = (wd === 0 ? ' su' : wd === 6 ? ' sa' : '') + (HOL[k] ? ' ho' : '') + (c ? ' ev ' + colorCls(c) : '') + (k === today ? ' td' : '');
+        var st = c ? colorSty(c) : '';
+        h += '<i class="' + ic.trim() + '"' + st + '>' + d + '</i>';
+      }
+      h += '</div></button>';
+    }
+    return h + '</div></div>';
+  }
+  function yvLoadSys(Y) {
+    if (!sysOn() || yvSys[Y]) return;
+    yvSys[Y] = [];
+    Sys.instances({ from: Y + '-01-01', to: Y + '-12-31', calendars: sysCfg.show }).then(function (r) {
+      yvSys[Y] = (r && r.events) || [];
+      var el = $('yvBody').querySelector('.yvyear[data-y="' + Y + '"]');
+      if (el && yvOpen) el.outerHTML = yvYear(Y);
+    }, function () { delete yvSys[Y]; });
+  }
+  function yvTitle() {
+    var body = $('yvBody'), top = body.getBoundingClientRect().top + 40, Y = yvLo;
+    body.querySelectorAll('.yvyear').forEach(function (el) { if (el.getBoundingClientRect().top <= top) Y = +el.dataset.y; });
+    $('yvTitle').textContent = Y + '년';
+  }
+  function yvShow(Y) {
+    var body = $('yvBody'); yvLo = Y - 1; yvHi = Y + 1; yvSys = {};
+    body.innerHTML = yvYear(Y - 1) + yvYear(Y) + yvYear(Y + 1);
+    [Y - 1, Y, Y + 1].forEach(yvLoadSys);
+    var el = body.querySelector('.yvyear[data-y="' + Y + '"]');
+    body.scrollTop = el.offsetTop - body.offsetTop;
+    yvTitle();
+  }
+  function openYear() {
+    if (yvOpen) return;
+    yvOpen = true;
+    var yv = $('yearView'); yv.hidden = false; document.body.classList.add('locked');
+    try { history.pushState({ yv: 1 }, ''); } catch (e) {}
+    yvShow(view.getFullYear());
+    void yv.offsetHeight; yv.classList.add('on');
+  }
+  function closeYear(fromBack) {
+    if (!yvOpen) return;
+    yvOpen = false;
+    var yv = $('yearView'); yv.classList.remove('on');
+    setTimeout(function () { if (yvOpen) return; yv.hidden = true; $('yvBody').innerHTML = ''; if (!edOpen && !dsOpen && !setOpen) document.body.classList.remove('locked'); }, reduce ? 0 : 230);
+    if (!fromBack) { try { if (history.state && history.state.yv) { skipPop = true; history.back(); } } catch (e) {} }
+  }
+  $('title').onclick = openYear; $('year').onclick = openYear;
+  $('yvClose').onclick = function () { closeYear(); };
+  $('yvToday').onclick = function () { yvShow(new Date().getFullYear()); };
+  $('yvBody').addEventListener('click', function (ev) {
+    var b = ev.target.closest('.mm'); if (!b) return;
+    view = new Date(+b.dataset.y, +b.dataset.m, 1);
+    if (!(sel.getFullYear() === view.getFullYear() && sel.getMonth() === view.getMonth())) sel = new Date(view);
+    render(); closeYear();
+  });
+  $('yvBody').addEventListener('scroll', function () {
+    var body = $('yvBody');
+    if (body.scrollTop < 300 && yvLo > 1900) {
+      var h0 = body.scrollHeight; yvLo--;
+      body.insertAdjacentHTML('afterbegin', yvYear(yvLo)); yvLoadSys(yvLo);
+      body.scrollTop += body.scrollHeight - h0;
+    }
+    if (body.scrollTop + body.clientHeight > body.scrollHeight - 300 && yvHi < 2200) {
+      yvHi++; body.insertAdjacentHTML('beforeend', yvYear(yvHi)); yvLoadSys(yvHi);
+    }
+    yvTitle();
+  }, { passive: true });
+
   window.chamBack = function () {
     if (askDone) { closeAsk(0); return true; }
     if (edOpen) {
@@ -1388,6 +1502,7 @@ body.locked { overflow: hidden; }
     }
     if (dsOpen) { closeDay(); return true; }
     if (setOpen) { closeSet(); return true; }
+    if (yvOpen) { closeYear(); return true; }
     if (document.activeElement && /INPUT|TEXTAREA/.test(document.activeElement.tagName)) { document.activeElement.blur(); return true; }
     return false;
   };
