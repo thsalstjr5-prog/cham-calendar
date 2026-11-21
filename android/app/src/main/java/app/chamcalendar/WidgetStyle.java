@@ -35,8 +35,8 @@ final class WidgetStyle {
             darkText = mode.equals("dark");
         }
         return darkText
-                ? new WidgetStyle(true, clear, 0xFF2E2A33, 0xFF5B5560, 0xFF6F5F9C, 0xFFA8634F, 0xFF4E6D96, 0xFFFFFFFF)
-                : new WidgetStyle(true, clear, 0xFFFFFFFF, 0xFFEDE6F2, 0xFFE3D8FA, 0xFFF7D3C6, 0xFFD3E2F5, 0xFF2F2A3A);
+                ? new WidgetStyle(true, clear, 0xFF2E2A33, 0xFF5B5560, 0xFF6F5F9C, 0xFF9C4630, 0xFF345A8F, 0xFFFFFFFF)
+                : new WidgetStyle(true, clear, 0xFFFFFFFF, 0xFFEDE6F2, 0xFFE3D8FA, 0xFFFFB8A0, 0xFFA9CCFF, 0xFF2F2A3A);
     }
 
     /** 배경화면이 밝은지 (밝으면 어두운 글씨가 잘 보여요). 모르면 폰의 다크 모드를 따라요. */

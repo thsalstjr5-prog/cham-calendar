@@ -21,4 +21,7 @@
     <color name="w_plum">#A07AA6</color>
     <color name="w_sand">#B39B85</color>
     <color name="w_slate">#8A8F9C</color>
+    <!-- 위젯 달력의 일요일·공휴일 / 토요일 숫자 (파스텔보다 진하게) -->
+    <color name="w_sun">#A9533B</color>
+    <color name="w_sat">#3F6396</color>
 </resources>

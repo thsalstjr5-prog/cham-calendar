@@ -14,6 +14,6 @@
         android:layout_height="match_parent"
         android:gravity="center"
         android:includeFontPadding="false"
-        android:textColor="@color/w_sky"
+        android:textColor="@color/w_sat"
         android:textSize="11sp" />
 </LinearLayout>

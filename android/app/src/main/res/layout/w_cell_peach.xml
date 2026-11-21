@@ -11,7 +11,7 @@
         android:layout_width="24dp"
         android:layout_height="24dp"
         android:gravity="center"
-        android:textColor="@color/w_peach"
+        android:textColor="@color/w_sun"
         android:textSize="12sp" />
 
     <ImageView
