@@ -49,6 +49,10 @@ public class DuoWidget extends AppWidgetProvider {
         int month = now.get(Calendar.MONTH);
         RemoteViews v = new RemoteViews(pkg, R.layout.w_duo);
         v.setInt(R.id.w_bgimg, "setImageAlpha", CalendarData.bgAlpha(ctx, widgetId));
+        WidgetStyle st = WidgetStyle.of(ctx, widgetId);
+        st.text(v, R.id.w_month, st.lav);
+        st.text(v, R.id.w_today_head, st.lav);
+        st.weekdays(v);
 
         // ── 왼쪽: 이번 달 달력 (숫자는 칸 높이에 맞춰 최대한 크게)
         v.setTextViewText(R.id.w_month, (month + 1) + "월");
@@ -60,7 +64,7 @@ public class DuoWidget extends AppWidgetProvider {
         c.add(Calendar.DAY_OF_MONTH, -lead);
         float rowDp = (heightDp - 20 - 18 - 14) / (float) weeks;     // 위아래 여백, "11월", 요일 줄 빼고
         float numSp = Math.max(10f, Math.min(15f, rowDp * 0.62f));
-        int textOn = ctx.getResources().getColor(R.color.w_on, ctx.getTheme());
+        int textOn = st.custom ? st.on : ctx.getResources().getColor(R.color.w_on, ctx.getTheme());
         for (int w = 0; w < weeks; w++) {
             RemoteViews row = new RemoteViews(pkg, R.layout.w_week_row);
             for (int i = 0; i < 7; i++) {
@@ -73,6 +77,7 @@ public class DuoWidget extends AppWidgetProvider {
                 RemoteViews cell = new RemoteViews(pkg, layout);
                 cell.setTextViewText(R.id.c_num, String.valueOf(c.get(Calendar.DAY_OF_MONTH)));
                 cell.setTextViewTextSize(R.id.c_num, TypedValue.COMPLEX_UNIT_SP, numSp);
+                st.text(cell, R.id.c_num, st.cell(layout));
                 if (k.equals(todayKey)) {
                     cell.setInt(R.id.c_num, "setBackgroundResource", R.drawable.w_today_fill);
                     cell.setTextColor(R.id.c_num, textOn);
@@ -92,15 +97,16 @@ public class DuoWidget extends AppWidgetProvider {
             CalendarData.Day dd = CalendarData.day(all, CalendarData.key(d));
             int items = dd.events.size() + dd.openTodos.size();
             if (day == 0) {
-                if (items == 0) { note(v, pkg, "오늘은 일정이 없어요"); budget--; }
-                else budget -= fill(v, pkg, dd, budget);
+                if (items == 0) { note(v, pkg, st, "오늘은 일정이 없어요"); budget--; }
+                else budget -= fill(v, pkg, st, dd, budget);
             } else if (items > 0) {
                 if (budget < 2) break;            // 날짜 제목 + 한 줄은 들어가야 보여줘요
                 RemoteViews hd = new RemoteViews(pkg, R.layout.w_dhead);
                 hd.setTextViewText(R.id.r_text, (day == 1 ? "내일 " : "") + md(d));
+                st.text(hd, R.id.r_text, st.muted);
                 v.addView(R.id.w_list, hd);
                 budget--;
-                budget -= fill(v, pkg, dd, budget);
+                budget -= fill(v, pkg, st, dd, budget);
             }
             d.add(Calendar.DAY_OF_MONTH, 1);
         }
@@ -111,7 +117,7 @@ public class DuoWidget extends AppWidgetProvider {
     }
 
     /** 하루치 일정 → 할 일 순서로 넣어요. 자리가 모자라면 마지막 줄을 "외 n개"로. 쓴 줄 수를 돌려줘요. */
-    private static int fill(RemoteViews v, String pkg, CalendarData.Day dd, int budget) {
+    private static int fill(RemoteViews v, String pkg, WidgetStyle st, CalendarData.Day dd, int budget) {
         int total = dd.events.size() + dd.openTodos.size();
         int show = total <= budget ? total : Math.max(0, budget - 1);
         int n = 0;
@@ -122,6 +128,8 @@ public class DuoWidget extends AppWidgetProvider {
             r.setTextViewText(R.id.r_text, e.title);
             String t = e.when != null ? e.when : e.time.isEmpty() ? "" : CalendarData.fmtTime(e.time);
             r.setTextViewText(R.id.r_time, t.equals("하루 종일") ? "" : t);
+            st.text(r, R.id.r_text, st.fg);
+            st.text(r, R.id.r_time, st.muted);
             v.addView(R.id.w_list, r);
             n++;
         }
@@ -129,16 +137,18 @@ public class DuoWidget extends AppWidgetProvider {
             if (n >= show) break;
             RemoteViews r = new RemoteViews(pkg, R.layout.w_drow_todo);
             r.setTextViewText(R.id.r_text, t);
+            st.text(r, R.id.r_text, st.fg);
             v.addView(R.id.w_list, r);
             n++;
         }
-        if (show < total) { note(v, pkg, "외 " + (total - show) + "개"); n++; }
+        if (show < total) { note(v, pkg, st, "외 " + (total - show) + "개"); n++; }
         return n;
     }
 
-    private static void note(RemoteViews v, String pkg, String text) {
+    private static void note(RemoteViews v, String pkg, WidgetStyle st, String text) {
         RemoteViews r = new RemoteViews(pkg, R.layout.w_dnote);
         r.setTextViewText(R.id.r_text, text);
+        st.text(r, R.id.r_text, st.muted);
         v.addView(R.id.w_list, r);
     }
 
@@ -147,6 +157,12 @@ public class DuoWidget extends AppWidgetProvider {
             case "peach": return R.drawable.w_bar_peach;
             case "mint": return R.drawable.w_bar_mint;
             case "sky": return R.drawable.w_bar_sky;
+            case "rose": return R.drawable.w_bar_rose;
+            case "butter": return R.drawable.w_bar_butter;
+            case "teal": return R.drawable.w_bar_teal;
+            case "plum": return R.drawable.w_bar_plum;
+            case "sand": return R.drawable.w_bar_sand;
+            case "slate": return R.drawable.w_bar_slate;
             default: return R.drawable.w_bar_lav;
         }
     }

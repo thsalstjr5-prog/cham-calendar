@@ -166,6 +166,14 @@ final class CalendarData {
     static void setBgPercent(Context ctx, int widgetId, int pct) {
         ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(KEY + "-wbg-" + widgetId, String.valueOf(pct)).apply();
     }
+    /** 위젯 글씨 색: auto(자동) / dark(어두운 글씨) / light(밝은 글씨) */
+    static String textMode(Context ctx, int widgetId) {
+        String v = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY + "-wtext-" + widgetId, "auto");
+        return "dark".equals(v) || "light".equals(v) ? v : "auto";
+    }
+    static void setTextMode(Context ctx, int widgetId, String mode) {
+        ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(KEY + "-wtext-" + widgetId, mode).apply();
+    }
     static int bgAlpha(Context ctx, int widgetId) { return Math.round(bgPercent(ctx, widgetId) * 255 / 100f); }
 
     static String fmtTime(String t) {
@@ -179,6 +187,12 @@ final class CalendarData {
             case "peach": return R.drawable.w_dot_peach;
             case "mint": return R.drawable.w_dot_mint;
             case "sky": return R.drawable.w_dot_sky;
+            case "rose": return R.drawable.w_dot_rose;
+            case "butter": return R.drawable.w_dot_butter;
+            case "teal": return R.drawable.w_dot_teal;
+            case "plum": return R.drawable.w_dot_plum;
+            case "sand": return R.drawable.w_dot_sand;
+            case "slate": return R.drawable.w_dot_slate;
             default: return R.drawable.w_dot_lav;
         }
     }

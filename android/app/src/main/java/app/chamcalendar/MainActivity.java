@@ -9,6 +9,8 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import androidx.activity.OnBackPressedCallback;
+
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
@@ -16,6 +18,16 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         takeWidgetAction(getIntent());
         super.onCreate(savedInstanceState);
+        // 뒤로가기: 열린 창(팝업·추가 창)이 있으면 그것만 닫고, 첫 화면이면 앱을 끄지 않고 홈으로 내려가요
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (getBridge() == null || getBridge().getWebView() == null) { moveTaskToBack(true); return; }
+                getBridge().getWebView().evaluateJavascript("(window.chamBack && chamBack()) ? '1' : '0'", r -> {
+                    if (!"\"1\"".equals(r)) moveTaskToBack(true);
+                });
+            }
+        });
         // 자판이 올라오면 화면을 자판 위까지만 쓰도록 (자판이 목록을 덮지 않게)
         if (getBridge() == null || getBridge().getWebView() == null) return;
         ViewCompat.setOnApplyWindowInsetsListener(getBridge().getWebView(), (v, wi) -> {

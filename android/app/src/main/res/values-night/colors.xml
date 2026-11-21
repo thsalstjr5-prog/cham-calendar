@@ -13,4 +13,10 @@
     <color name="w_mint">#ACD8C2</color>
     <color name="w_sky">#ADC3E2</color>
     <color name="w_on">#2F2A3A</color>
+    <color name="w_rose">#E9B5C7</color>
+    <color name="w_butter">#E6D29B</color>
+    <color name="w_teal">#9FD1CD</color>
+    <color name="w_plum">#D0AAD6</color>
+    <color name="w_sand">#DCC6B0</color>
+    <color name="w_slate">#C0C5D0</color>
 </resources>

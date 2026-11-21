@@ -46,13 +46,13 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="3dp"
                 android:orientation="horizontal">
-                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:includeFontPadding="false" android:text="일" android:textColor="@color/w_peach" android:textSize="9sp" />
-                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:includeFontPadding="false" android:text="월" android:textColor="@color/w_muted" android:textSize="9sp" />
-                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:includeFontPadding="false" android:text="화" android:textColor="@color/w_muted" android:textSize="9sp" />
-                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:includeFontPadding="false" android:text="수" android:textColor="@color/w_muted" android:textSize="9sp" />
-                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:includeFontPadding="false" android:text="목" android:textColor="@color/w_muted" android:textSize="9sp" />
-                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:includeFontPadding="false" android:text="금" android:textColor="@color/w_muted" android:textSize="9sp" />
-                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:includeFontPadding="false" android:text="토" android:textColor="@color/w_sky" android:textSize="9sp" />
+                <TextView android:id="@+id/wd0" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:includeFontPadding="false" android:text="일" android:textColor="@color/w_peach" android:textSize="9sp" />
+                <TextView android:id="@+id/wd1" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:includeFontPadding="false" android:text="월" android:textColor="@color/w_muted" android:textSize="9sp" />
+                <TextView android:id="@+id/wd2" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:includeFontPadding="false" android:text="화" android:textColor="@color/w_muted" android:textSize="9sp" />
+                <TextView android:id="@+id/wd3" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:includeFontPadding="false" android:text="수" android:textColor="@color/w_muted" android:textSize="9sp" />
+                <TextView android:id="@+id/wd4" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:includeFontPadding="false" android:text="목" android:textColor="@color/w_muted" android:textSize="9sp" />
+                <TextView android:id="@+id/wd5" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:includeFontPadding="false" android:text="금" android:textColor="@color/w_muted" android:textSize="9sp" />
+                <TextView android:id="@+id/wd6" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:includeFontPadding="false" android:text="토" android:textColor="@color/w_sky" android:textSize="9sp" />
             </LinearLayout>
 
             <LinearLayout

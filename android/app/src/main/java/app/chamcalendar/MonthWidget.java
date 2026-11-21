@@ -20,15 +20,24 @@ public class MonthWidget extends AppWidgetProvider {
     }
 
     static void draw(Context ctx, AppWidgetManager m, int[] ids) {
-        String pkg = ctx.getPackageName();
         JSONObject all = CalendarData.load(ctx);
+        for (int id : ids) m.updateAppWidget(id, build(ctx, all, id));
+    }
+
+    static RemoteViews build(Context ctx, JSONObject all, int widgetId) {
+        String pkg = ctx.getPackageName();
+        WidgetStyle st = WidgetStyle.of(ctx, widgetId);
         Calendar now = Calendar.getInstance();
         String todayKey = CalendarData.key(now);
         int month = now.get(Calendar.MONTH);
 
         RemoteViews v = new RemoteViews(pkg, R.layout.w_month);
+        v.setInt(R.id.w_bgimg, "setImageAlpha", CalendarData.bgAlpha(ctx, widgetId));
         v.setTextViewText(R.id.w_month, (month + 1) + "월");
         v.setTextViewText(R.id.w_year, String.valueOf(now.get(Calendar.YEAR)));
+        st.text(v, R.id.w_month, st.lav);
+        st.text(v, R.id.w_year, st.muted);
+        st.weekdays(v);
         v.removeAllViews(R.id.w_grid);
 
         Calendar c = (Calendar) now.clone();
@@ -48,6 +57,7 @@ public class MonthWidget extends AppWidgetProvider {
                         : dow == Calendar.SATURDAY ? R.layout.w_cell_sky : R.layout.w_cell_fg;
                 RemoteViews cell = new RemoteViews(pkg, layout);
                 cell.setTextViewText(R.id.c_num, String.valueOf(c.get(Calendar.DAY_OF_MONTH)));
+                st.text(cell, R.id.c_num, st.cell(layout));
                 if (k.equals(todayKey)) cell.setInt(R.id.c_num, "setBackgroundResource", R.drawable.w_ring);
                 if (!other) {
                     CalendarData.Day d = CalendarData.day(all, k);
@@ -65,9 +75,6 @@ public class MonthWidget extends AppWidgetProvider {
             v.addView(R.id.w_grid, row);
         }
         v.setOnClickPendingIntent(R.id.w_root, WidgetRefresh.openApp(ctx));
-        for (int id : ids) {
-            v.setInt(R.id.w_bgimg, "setImageAlpha", CalendarData.bgAlpha(ctx, id));
-            m.updateAppWidget(id, v);
-        }
+        return v;
     }
 }

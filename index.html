@@ -34,6 +34,7 @@ body { margin: 0; }
   --peach: #c99484;     /* open to-dos, Sunday */
   --mint: #86ae9b;      /* finished to-dos */
   --sky: #8199b8;       /* Saturday */
+  --rose: #c48a9f; --butter: #c4ab6b; --teal: #6fa5a3; --plum: #a07aa6; --sand: #b39b85; --slate: #8a8f9c;   /* 일정 색 추가 */
   --on-accent: #f3eff3;
   --font: "Gothic A1", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
   --hand: "Griun Cherry1Spoon", "Gothic A1", cursive;
@@ -43,6 +44,7 @@ body { margin: 0; }
     --bg: #2f2a3a; --surface: #3a3447; --surface-2: #453e54;   /* dusky plum, pastel accents kept */
     --fg: #eee7f2; --muted: #b8adc6; --line: rgba(238, 231, 242, .10);
     --lav: #c4b5e6; --lav-soft: #5d5178; --peach: #ecbcaa; --mint: #acd8c2; --sky: #adc3e2;
+    --rose: #e9b5c7; --butter: #e6d29b; --teal: #9fd1cd; --plum: #d0aad6; --sand: #dcc6b0; --slate: #c0c5d0;
     --on-accent: #2f2a3a;
     color-scheme: dark;
   }
@@ -51,6 +53,7 @@ body { margin: 0; }
   --bg: #2f2a3a; --surface: #3a3447; --surface-2: #453e54;
   --fg: #eee7f2; --muted: #b8adc6; --line: rgba(238, 231, 242, .10);
   --lav: #c4b5e6; --lav-soft: #5d5178; --peach: #ecbcaa; --mint: #acd8c2; --sky: #adc3e2;
+  --rose: #e9b5c7; --butter: #e6d29b; --teal: #9fd1cd; --plum: #d0aad6; --sand: #dcc6b0; --slate: #c0c5d0;
   --on-accent: #2f2a3a;
   color-scheme: dark;
 }
@@ -117,6 +120,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--lav); outli
 .chip.wide { overflow: visible; }
 .more { font-size: 10px; line-height: 12px; color: var(--muted); text-align: center; }
 .c-lav { background: var(--lav); } .c-peach { background: var(--peach); } .c-mint { background: var(--mint); } .c-sky { background: var(--sky); }
+.c-rose { background: var(--rose); } .c-butter { background: var(--butter); } .c-teal { background: var(--teal); } .c-plum { background: var(--plum); } .c-sand { background: var(--sand); } .c-slate { background: var(--slate); }
 .legend { display: flex; gap: 14px; justify-content: center; font-size: 12px; color: var(--muted); padding-top: 8px; }
 .legend i { display: inline-block; width: 7px; height: 7px; border-radius: 4px; margin-right: 4px; vertical-align: 1px; }
 .hint { font-size: 11px; color: var(--muted); text-align: center; opacity: .8; padding-top: 4px; }
@@ -213,10 +217,12 @@ body.locked { overflow: hidden; }
 #fTitle { font-size: 18px; font-weight: 600; }
 #fTitle.need::placeholder { color: var(--peach); opacity: 1; }
 .fr.memo { align-items: flex-start; }
+.fr.colorrow { align-items: flex-start; }
+.fr.colorrow .lb { padding-top: 17px; }
 .fr.memo .lb { padding-top: 13px; }
 .fr textarea { resize: none; min-height: 76px; line-height: 1.5; }
-.dots { display: flex; gap: 8px; flex: none; }
-.dots button { width: 24px; height: 24px; border-radius: 12px; }
+.dots { display: flex; flex-wrap: wrap; gap: 10px; flex: 1; padding: 12px 0; }
+.dots button { width: 28px; height: 28px; border-radius: 14px; }
 .dots button[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--fg); }
 .toggle { appearance: none; -webkit-appearance: none; margin: 0 0 0 auto; width: 48px; height: 28px; border-radius: 14px; background: var(--surface-2); position: relative; cursor: pointer; transition: background .2s ease; flex: none; box-shadow: inset 0 0 0 1px var(--line); }
 .toggle::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 11px; background: var(--muted); transition: transform .2s ease, background .2s ease; }
@@ -348,11 +354,19 @@ body.locked { overflow: hidden; }
     <div class="card">
       <div class="fr">
         <input type="text" id="fTitle" placeholder="제목" enterkeyhint="done" autocomplete="off">
+      </div>
+      <div class="fr evonly colorrow"><span class="lb">색</span>
         <div class="dots" id="dots" role="group" aria-label="색">
           <button type="button" class="c-lav" data-c="lav" aria-label="라벤더"></button>
           <button type="button" class="c-peach" data-c="peach" aria-label="피치"></button>
           <button type="button" class="c-mint" data-c="mint" aria-label="민트"></button>
           <button type="button" class="c-sky" data-c="sky" aria-label="하늘"></button>
+          <button type="button" class="c-rose" data-c="rose" aria-label="장미"></button>
+          <button type="button" class="c-butter" data-c="butter" aria-label="버터"></button>
+          <button type="button" class="c-teal" data-c="teal" aria-label="청록"></button>
+          <button type="button" class="c-plum" data-c="plum" aria-label="자두"></button>
+          <button type="button" class="c-sand" data-c="sand" aria-label="모래"></button>
+          <button type="button" class="c-slate" data-c="slate" aria-label="회청"></button>
         </div>
       </div>
       <label class="fr evonly"><span class="lb">하루 종일</span><input type="checkbox" class="toggle" id="fAll" role="switch"></label>
@@ -413,7 +427,7 @@ body.locked { overflow: hidden; }
     '2027-10-03':'개천절','2027-10-04':'대체공휴일','2027-10-09':'한글날','2027-10-11':'대체공휴일',
     '2027-12-25':'성탄절','2027-12-27':'대체공휴일'
   };
-  var COLORS = ['lav', 'peach', 'mint', 'sky'];
+  var COLORS = ['lav', 'peach', 'mint', 'sky', 'rose', 'butter', 'teal', 'plum', 'sand', 'slate'];
   var REPEAT = { day: '매일', week: '매주', month: '매월', year: '매년' };
 
   function pad(n) { return (n < 10 ? '0' : '') + n; }
@@ -883,7 +897,6 @@ body.locked { overflow: hidden; }
     Array.prototype.forEach.call($('seg').children, function (b) { b.setAttribute('aria-pressed', b.dataset.kind === ed.kind ? 'true' : 'false'); });
     $('fTitle').value = ed.title; $('fTitle').placeholder = ed.kind === 'todo' ? '할 일' : '제목';
     Array.prototype.forEach.call($('dots').children, function (b) { b.setAttribute('aria-pressed', b.dataset.c === ed.color ? 'true' : 'false'); });
-    $('dots').hidden = ed.kind === 'todo';
     $('fAll').checked = ed.allDay;
     $('range').classList.toggle('allday', ed.allDay);
     $('sDate').textContent = mdw(ed.sK); $('eDate').textContent = mdw(ed.eK); $('tDate').textContent = mdw(ed.tK);
@@ -1060,6 +1073,18 @@ body.locked { overflow: hidden; }
     try { history.pushState({ ed: 1 }, ''); } catch (e) {}
     tryClose();
   });
+
+  // 폰의 뒤로가기 (앱): 열린 것부터 하나씩 닫아요. 닫을 게 없으면 false → 앱은 홈으로 내려가요 (꺼지지 않아요)
+  window.chamBack = function () {
+    if (askDone) { closeAsk(0); return true; }
+    if (edOpen) {
+      if (miniFor) { readEditor(); miniFor = null; fillEditor(); return true; }
+      tryClose(); return true;
+    }
+    if (dsOpen) { closeDay(); return true; }
+    if (document.activeElement && /INPUT|TEXTAREA/.test(document.activeElement.tagName)) { document.activeElement.blur(); return true; }
+    return false;
+  };
 
   // 자판이 올라와도 쓰고 있는 칸이 보이게
   function keepVisible() {

@@ -39,6 +39,7 @@
             android:src="@drawable/w_bg" />
 
         <TextView
+            android:id="@+id/cfg_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
@@ -73,6 +74,50 @@
             android:textColor="@color/w_fg"
             android:textSize="15sp" />
     </LinearLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:text="글씨 색"
+        android:textColor="@color/w_fg"
+        android:textSize="15sp"
+        android:textStyle="bold" />
+
+    <RadioGroup
+        android:id="@+id/cfg_text_mode"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:orientation="vertical">
+
+        <RadioButton
+            android:id="@+id/cfg_auto"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:buttonTint="@color/w_lav"
+            android:text="자동 (배경화면 밝기에 맞춰요)"
+            android:textColor="@color/w_fg"
+            android:textSize="14sp" />
+
+        <RadioButton
+            android:id="@+id/cfg_dark"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:buttonTint="@color/w_lav"
+            android:text="어두운 글씨 (밝은 배경화면에)"
+            android:textColor="@color/w_fg"
+            android:textSize="14sp" />
+
+        <RadioButton
+            android:id="@+id/cfg_light"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:buttonTint="@color/w_lav"
+            android:text="밝은 글씨 (어두운 배경화면에)"
+            android:textColor="@color/w_fg"
+            android:textSize="14sp" />
+    </RadioGroup>
 
     <LinearLayout
         android:layout_width="match_parent"
