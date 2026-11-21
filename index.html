@@ -79,7 +79,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--lav); outli
 .month span { color: var(--muted); font-size: 14px; font-weight: 500; letter-spacing: .04em; }
 .nav { display: flex; gap: 6px; }
 .nav button {
-  min-width: 40px; height: 40px; border-radius: 20px; background: var(--surface);
+  min-width: 40px; color: var(--fg); height: 40px; border-radius: 20px; background: var(--surface);
   display: grid; place-items: center; font-size: 15px; padding: 0 12px;
 }
 .nav button:active { background: var(--surface-2); }
@@ -271,9 +271,22 @@ body.locked { overflow: hidden; }
 .ask .btns button:last-child { color: var(--lav); }
 .ask .btns button:active { background: var(--surface-2); }
 
-.foot { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px; padding-top: 8px; }
-.note { margin: 0; text-align: center; font-size: 13px; color: var(--muted); min-height: 1em; }
-.foot button { font-size: 13px; color: var(--muted); padding: 8px 12px; border-radius: 12px; }
+/* 잠깐 떴다 사라지는 안내 */
+.note {
+  position: fixed; left: 50%; bottom: calc(92px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 40;
+  margin: 0; max-width: calc(100% - 40px); width: max-content; text-align: center; font-size: 13px; line-height: 1.4;
+  color: var(--on-accent); background: var(--fg); padding: 9px 16px; border-radius: 18px; box-shadow: 0 6px 20px rgba(20, 16, 26, .2);
+}
+.note:empty { display: none; }
+/* 설정 */
+.sscrim { position: fixed; inset: 0; background: rgba(24, 20, 30, .38); z-index: 14; opacity: 0; transition: opacity .3s ease; }
+.sscrim.on { opacity: 1; }
+.setbody { padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)); }
+.srow { width: 100%; text-align: left; justify-content: space-between; padding: 12px 0; }
+.srow .st { font-size: 15px; font-weight: 600; display: flex; flex-direction: column; gap: 2px; }
+.srow .st small { font-size: 12px; font-weight: 500; color: var(--muted); }
+.srow .sv { font-size: 14px; color: var(--lav); font-weight: 600; }
+.ver { text-align: center; font-size: 12px; color: var(--muted); margin: 6px 0 0; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -285,6 +298,7 @@ body.locked { overflow: hidden; }
       <button id="prev" aria-label="이전 달">‹</button>
       <button id="today">오늘</button>
       <button id="next" aria-label="다음 달">›</button>
+      <button id="openSet" aria-label="설정"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
     </div>
   </header>
 
@@ -303,14 +317,8 @@ body.locked { overflow: hidden; }
     <p class="empty" id="dayEmpty">일정이 없어요. 아래에서 바로 추가해 보세요.</p>
   </section>
 
-  <div class="foot">
-    <button id="theme">화면 더 어둡게</button>
-    <button id="backup">백업 저장</button>
-    <button id="restore">백업 불러오기</button>
-    <input type="file" id="restoreFile" accept="application/json,.json,text/plain,*/*" hidden>
-  </div>
-  <p class="note" id="note" aria-live="polite"></p>
 </div>
+<p class="note" id="note" role="status" aria-live="polite"></p>
 
 <form class="quick" id="quick" autocomplete="off">
   <div class="wrap">
@@ -321,6 +329,21 @@ body.locked { overflow: hidden; }
     </div>
   </div>
 </form>
+
+<div id="sscrim" class="sscrim" hidden></div>
+<section class="dsheet" id="setSheet" role="dialog" aria-modal="true" aria-label="설정" hidden>
+  <div class="grab" id="setGrab" aria-hidden="true"></div>
+  <div class="dstop" id="setTop"><div class="dhead"><b>설정</b></div><button type="button" class="dsx" id="setClose" aria-label="닫기">✕</button></div>
+  <div class="dsbody setbody">
+    <div class="card">
+      <button type="button" class="fr srow" id="theme"><span class="st">화면 밝기</span><span class="sv" id="themeVal">기본</span></button>
+      <button type="button" class="fr srow" id="backup"><span class="st">백업 저장<small>기록을 파일로 만들어 보내요</small></span><span class="sv">›</span></button>
+      <button type="button" class="fr srow" id="restore"><span class="st">백업 불러오기<small>저장해 둔 백업 파일에서 가져와요</small></span><span class="sv">›</span></button>
+    </div>
+    <input type="file" id="restoreFile" accept="application/json,.json,text/plain,*/*" hidden>
+    <p class="ver">챔의 달력</p>
+  </div>
+</section>
 
 <div id="dscrim" hidden></div>
 <section class="dsheet" id="dsheet" role="dialog" aria-modal="true" aria-label="그날 일정" hidden>
@@ -1067,12 +1090,43 @@ body.locked { overflow: hidden; }
   // 폰의 뒤로가기: 확인 창 → 추가 창 순서로 닫혀요
   window.addEventListener('popstate', function () {
     if (skipPop) { skipPop = false; return; }   // 창이 스스로 닫히면서 생긴 뒤로가기
-    if (!edOpen) { if (dsOpen) closeDay(true); return; }
+    if (!edOpen) { if (dsOpen) closeDay(true); else if (setOpen) closeSet(true); return; }
     if (askDone) { closeAsk(0); try { history.pushState({ ed: 1 }, ''); } catch (e) {} return; }
     if (snap() === edSnap) { closeEditor(true); return; }
     try { history.pushState({ ed: 1 }, ''); } catch (e) {}
     tryClose();
   });
+
+  // ───── 설정 창 ─────
+  var setOpen = false, setSheet = $('setSheet'), sscrim = $('sscrim');
+  function openSet() {
+    if (setOpen) return;
+    setOpen = true;
+    setSheet.hidden = false; sscrim.hidden = false; document.body.classList.add('locked');
+    try { history.pushState({ set: 1 }, ''); } catch (e) {}
+    void setSheet.offsetHeight;
+    setSheet.classList.add('up'); sscrim.classList.add('on');
+  }
+  function closeSet(fromBack) {
+    if (!setOpen) return;
+    setOpen = false;
+    setSheet.classList.remove('up', 'drag'); setSheet.style.transform = ''; sscrim.classList.remove('on'); sscrim.style.opacity = '';
+    setTimeout(function () { if (setOpen) return; setSheet.hidden = true; sscrim.hidden = true; if (!edOpen && !dsOpen) document.body.classList.remove('locked'); }, reduce ? 0 : 340);
+    if (!fromBack) { try { if (history.state && history.state.set) { skipPop = true; history.back(); } } catch (e) {} }
+  }
+  $('openSet').onclick = openSet;
+  $('setClose').onclick = function () { closeSet(); };
+  sscrim.addEventListener('click', function () { closeSet(); });
+  (function () {
+    var y0 = 0, dy = 0, pid = null;
+    function down(e) { if (!setOpen || e.target.closest('button')) return; pid = e.pointerId; y0 = e.clientY; dy = 0; try { e.currentTarget.setPointerCapture(pid); } catch (er) {} setSheet.classList.add('drag'); }
+    function move(e) { if (e.pointerId !== pid) return; dy = Math.max(0, e.clientY - y0); setSheet.style.transform = 'translateY(' + dy + 'px)'; sscrim.style.opacity = String(Math.max(0, 1 - dy / 400)); }
+    function up(e) { if (e.pointerId !== pid) return; pid = null; setSheet.classList.remove('drag'); setSheet.style.transform = ''; sscrim.style.opacity = ''; if (dy > 90) closeSet(); }
+    [$('setGrab'), $('setTop')].forEach(function (el) {
+      el.addEventListener('pointerdown', down); el.addEventListener('pointermove', move);
+      el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+    });
+  })();
 
   // 폰의 뒤로가기 (앱): 열린 것부터 하나씩 닫아요. 닫을 게 없으면 false → 앱은 홈으로 내려가요 (꺼지지 않아요)
   window.chamBack = function () {
@@ -1082,6 +1136,7 @@ body.locked { overflow: hidden; }
       tryClose(); return true;
     }
     if (dsOpen) { closeDay(); return true; }
+    if (setOpen) { closeSet(); return true; }
     if (document.activeElement && /INPUT|TEXTAREA/.test(document.activeElement.tagName)) { document.activeElement.blur(); return true; }
     return false;
   };
@@ -1103,15 +1158,18 @@ body.locked { overflow: hidden; }
     if (t === 'dark') root.setAttribute('data-theme', 'dark'); else if (t === 'light') root.setAttribute('data-theme', 'light');
     var dark = root.getAttribute('data-theme') === 'dark' ||
       (!root.hasAttribute('data-theme') && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
-    $('theme').textContent = dark ? '화면 조금 밝게' : '화면 더 어둡게';
+    isDark = dark;
+    $('themeVal').textContent = dark ? '어둡게' : '밝게';
+    $('theme').setAttribute('aria-label', '화면 밝기: 지금 ' + (dark ? '어둡게' : '밝게') + '. 눌러서 바꾸기');
   }
+  var isDark = false;
   $('theme').onclick = function () {
-    var t = $('theme').textContent === '화면 조금 밝게' ? 'light' : 'dark';
+    var t = isDark ? 'light' : 'dark';
     setItem(KEY + '-theme', t); applyTheme(t);
   };
 
   // 백업: 파일로 저장 / 불러오기
-  function note(t) { $('note').textContent = t; clearTimeout(note.t); note.t = setTimeout(function () { $('note').textContent = ''; }, 5000); }
+  function note(t) { $('note').textContent = t; clearTimeout(note.t); note.t = setTimeout(function () { $('note').textContent = ''; }, 3200); }
   $('backup').onclick = function () {
     var json = JSON.stringify({ app: 'cham-calendar', v: 3, data: store }, null, 1);
     var name = 'cham-calendar-backup-' + key(new Date()) + '.json';
