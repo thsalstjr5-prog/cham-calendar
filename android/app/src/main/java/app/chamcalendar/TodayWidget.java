@@ -64,7 +64,9 @@ public class TodayWidget extends AppWidgetProvider {
             v.addView(R.id.w_rows, r);
         }
         v.setOnClickPendingIntent(R.id.w_root, WidgetRefresh.openApp(ctx));
-        v.setInt(R.id.w_bgimg, "setImageAlpha", CalendarData.bgAlpha(ctx));
-        for (int id : ids) m.updateAppWidget(id, v);
+        for (int id : ids) {
+            v.setInt(R.id.w_bgimg, "setImageAlpha", CalendarData.bgAlpha(ctx, id));
+            m.updateAppWidget(id, v);
+        }
     }
 }

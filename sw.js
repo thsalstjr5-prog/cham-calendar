@@ -1,6 +1,6 @@
 // 챔의 달력: 인터넷이 없어도 열리도록 파일을 폰에 보관해요.
 // 앱을 고친 뒤에는 VERSION 숫자를 올려야 폰에 새 버전이 들어가요.
-const VERSION = 'v12';
+const VERSION = 'v13';
 const CACHE = 'cham-calendar-' + VERSION;
 const FILES = [
   './', 'index.html', 'manifest.webmanifest',

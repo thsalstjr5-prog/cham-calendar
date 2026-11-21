@@ -156,12 +156,17 @@ final class CalendarData {
         return d;
     }
 
-    /** 위젯 배경 진하기 (앱에서 0~100%로 정해요). 0이면 완전 투명. */
-    static int bgAlpha(Context ctx) {
-        String v = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY + "-wbg", "100");
-        try { return Math.max(0, Math.min(255, Math.round(Integer.parseInt(v.trim()) * 255 / 100f))); }
-        catch (Exception e) { return 255; }
+    /** 위젯 배경 진하기 0~100% (위젯마다 따로, 위젯을 꾹 눌러 "설정"에서 정해요). */
+    static int bgPercent(Context ctx, int widgetId) {
+        SharedPreferences sp = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        String v = sp.getString(KEY + "-wbg-" + widgetId, sp.getString(KEY + "-wbg", "100"));
+        try { return Math.max(0, Math.min(100, Integer.parseInt(v.trim()))); }
+        catch (Exception e) { return 100; }
     }
+    static void setBgPercent(Context ctx, int widgetId, int pct) {
+        ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(KEY + "-wbg-" + widgetId, String.valueOf(pct)).apply();
+    }
+    static int bgAlpha(Context ctx, int widgetId) { return Math.round(bgPercent(ctx, widgetId) * 255 / 100f); }
 
     static String fmtTime(String t) {
         if (t == null || !t.matches("\\d{2}:\\d{2}")) return "하루 종일";

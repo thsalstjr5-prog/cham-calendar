@@ -38,17 +38,17 @@ public class DuoWidget extends AppWidgetProvider {
             Bundle o = m.getAppWidgetOptions(id);
             int h = o == null ? 0 : o.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 0);
             if (h <= 0) h = 130;
-            m.updateAppWidget(id, build(ctx, all, h));
+            m.updateAppWidget(id, build(ctx, all, h, id));
         }
     }
 
-    static RemoteViews build(Context ctx, JSONObject all, int heightDp) {
+    static RemoteViews build(Context ctx, JSONObject all, int heightDp, int widgetId) {
         String pkg = ctx.getPackageName();
         Calendar now = Calendar.getInstance();
         String todayKey = CalendarData.key(now);
         int month = now.get(Calendar.MONTH);
         RemoteViews v = new RemoteViews(pkg, R.layout.w_duo);
-        v.setInt(R.id.w_bgimg, "setImageAlpha", CalendarData.bgAlpha(ctx));
+        v.setInt(R.id.w_bgimg, "setImageAlpha", CalendarData.bgAlpha(ctx, widgetId));
 
         // ── 왼쪽: 이번 달 달력 (숫자는 칸 높이에 맞춰 최대한 크게)
         v.setTextViewText(R.id.w_month, (month + 1) + "월");

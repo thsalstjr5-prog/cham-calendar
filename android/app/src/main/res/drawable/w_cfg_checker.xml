@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 미리보기 바탕: 사진 대신 두 색 줄무늬 -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <gradient android:angle="0" android:startColor="#7FA6C9" android:centerColor="#E6B8C8" android:endColor="#9FC7A8" />
+            <corners android:radius="22dp" />
+        </shape>
+    </item>
+</layer-list>
